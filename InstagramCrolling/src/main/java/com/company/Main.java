@@ -20,16 +20,11 @@ public class Main {
 	public static final String WEB_DRIVER_ID = "webdriver.chrome.driver";
 	public static final String WEB_DRIVER_PATH = "chromedriver";
 	public static final String IMAGE_DIR = "images";
-	public static final int PAGE_NUM = 1000;
+	public static final int PAGE_NUM = 5000;
 
     public static void main(String[] args) {
 	    String template = "https://www.instagram.com/explore/tags/";
-	    String[] keywordList = {"케이크", "케이크주문제작", "케이크맛집", "케이크클래스", "케이크디자인", "케이크데코"};
-
-		ChromeOptions options = new ChromeOptions();
-		options.addArguments("--incognito");
-		WebDriver webDriver = new ChromeDriver(options);
-		System.setProperty(WEB_DRIVER_ID, WEB_DRIVER_PATH);
+	    String[] keywordList = {"카페인테리어"};
 
 //		try {
 //			webDriver.get("https://www.instagram.com/?hl=ko");
@@ -48,6 +43,10 @@ public class Main {
 	    for (String keyword : keywordList) {
 			String url = template + keyword;
 			String imageDir = IMAGE_DIR + "/" + keyword + "/";
+
+			ChromeOptions options = new ChromeOptions();
+			WebDriver webDriver = new ChromeDriver();
+			System.setProperty(WEB_DRIVER_ID, WEB_DRIVER_PATH);
 
 			try {
 				File dir = new File(imageDir);
@@ -95,6 +94,8 @@ public class Main {
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
+			} finally {
+				webDriver.close();
 			}
 		}
     }
