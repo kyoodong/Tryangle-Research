@@ -10,7 +10,7 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="InstagramCrolling" target="11" />
+      <module name="InstagramCrolling" target="14" />
     </bytecodeTargetLevel>
   </component>
 </project>
