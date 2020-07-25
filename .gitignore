@@ -213,3 +213,4 @@ gradle-app.setting
 
 # 이미지 파일
 InstagramCrolling/images/**
+InstagramCrolling/instaAccount.properties
