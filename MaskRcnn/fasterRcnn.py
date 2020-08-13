@@ -79,7 +79,7 @@ x = GlobalAveragePooling2D()(x)
 output = Dense(10, activation='softmax')(x)
 
 
-checkpoint_path = "mnist/cp.ckpt"
+checkpoint_path = "datas/mnist/cp.ckpt"
 checkpoint_dir = os.path.dirname(checkpoint_path)
 
 # 체크포인트 콜백 만들기

@@ -12,10 +12,10 @@ from PIL import Image, ImageDraw
 import os
 import sys
 
-EPOCHS = 12
-BATCH_SIZE = 8
+EPOCHS = 1
+BATCH_SIZE = 2
 SUBSAMPLE_RATIO = 4
-IMAGE_SIZE = (64, 64)
+IMAGE_SIZE = (256, 256)
 ANCHOR_SIZES = [128, 256, 512]
 ANCHOR_RATIOS = [[1,1], [math.sqrt(2), 1/math.sqrt(2)], [math.sqrt(3), 1/math.sqrt(3)]]
 NUM_OF_ANCHORS = len(ANCHOR_RATIOS) * len(ANCHOR_SIZES)
@@ -23,11 +23,11 @@ SUBSAMPLED_IMAGE_SIZE = (int(IMAGE_SIZE[0] / SUBSAMPLE_RATIO), int(IMAGE_SIZE[1]
 POSITIVE_THRESHOLD = 0.7
 NEGATIVE_THRESHOLD = 0.3
 
-dataset_dir = 'tiny-imagenet-200'
-train_dir = '{}/train'.format(dataset_dir)
-validation_dir = '{}/val/images'.format(dataset_dir)
-test_dir = '{}/test/images'.format(dataset_dir)
-words = '{}/words.txt'.format(dataset_dir)
+# dataset_dir = ''
+train_dir = 'datas/train_imagenet'
+validation_dir = 'datas/tiny-imagenet-200/val'
+test_dir = 'test_imagenet'
+words = '{}/class_mapping'.format(train_dir)
 
 word_bag_list = list()
 word_map = dict()
@@ -38,7 +38,7 @@ while True:
         break
     data = line.split('\t')
     directory = data[0]
-    labels = data[1].replace('\n', '').replace(' ', '').split(',')
+    # labels = data[1].replace('\n', '').replace(' ', '').split(',')
     word_bag_list.append(directory)
 
 word_bag_list = np.array(word_bag_list)
@@ -67,11 +67,24 @@ def process_path(path):
     return image, label
 
 
-train_ds = tf.data.Dataset.list_files('{}/*/images/*'.format(train_dir)).shuffle(1000)
-train_ds = train_ds.map(process_path, num_parallel_calls=BATCH_SIZE).batch(BATCH_SIZE)
+# train_ds = tf.data.Dataset.list_files(train_dir).shuffle(1000)
+# train_ds = train_ds.map(process_path, num_parallel_calls=BATCH_SIZE).batch(BATCH_SIZE)
 
-valid_image_paths = glob("{}/*".format(validation_dir))
-valid_annotation_path = "{}/{}/val_annotations.txt".format(dataset_dir, 'val')
+data_generator = tf.keras.preprocessing.image.ImageDataGenerator(
+    # featurewise_center=True, featurewise_std_normalization=True,
+    width_shift_range=0.2, height_shift_range=0.2, horizontal_flip=True, vertical_flip=True,
+    brightness_range=[0.2, 1.0], rescale=1/255., rotation_range=20
+)
+
+valid_data_generator = tf.keras.preprocessing.image.ImageDataGenerator(
+    rescale=1/255.
+)
+
+train_data = data_generator.flow_from_directory(train_dir, target_size=IMAGE_SIZE,
+                                   batch_size=BATCH_SIZE)
+
+valid_image_paths = glob("{}/images/*.JPEG".format(validation_dir))
+valid_annotation_path = "{}/val_annotations.txt".format(validation_dir)
 valid_images = []
 
 val_keys = []
@@ -107,9 +120,6 @@ def process_valid_path(path):
 
 valid_ds = tf.data.Dataset.list_files('{}/*'.format(validation_dir))
 valid_ds = valid_ds.map(process_valid_path).batch(BATCH_SIZE)
-# valid_label_ds = tf.data.Dataset.from_tensor_slices([valid_image_labels]).unbatch()
-# valid_ds = tf.data.Dataset.zip((valid_ds, valid_label_ds)).batch(BATCH_SIZE)
-
 
 #%%
 
@@ -159,7 +169,7 @@ x = GlobalAveragePooling2D()(x)
 output = Dense(len(word_bag_list), activation='softmax')(x)
 
 
-checkpoint_path = "tiny_imagenet_t/cp.ckpt"
+checkpoint_path = "datas/imagenet_checkpoint/cp.ckpt"
 checkpoint_dir = os.path.dirname(checkpoint_path)
 
 # 체크포인트 콜백 만들기
@@ -184,9 +194,11 @@ def metrics(y_true, y_pred):
 
 
 model = Model(resnet_input, output)
-model.load_weights(checkpoint_path)
-optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4)
+# model.load_weights(checkpoint_path)
+optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
 
-model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'], run_eagerly=True)
-model.fit(train_ds, batch_size=BATCH_SIZE, epochs=EPOCHS, callbacks=[cp_callback], validation_data=valid_ds, validation_freq=4)
-model.evaluate(valid_ds, batch_size=BATCH_SIZE)
+model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'], run_eagerly=False)
+model.fit_generator(train_data, epochs=EPOCHS, callbacks=[cp_callback]
+          # , validation_data=valid_ds, validation_freq=4, validation_steps=10
+)
+# model.evaluate(valid_ds, batch_size=BATCH_SIZE)

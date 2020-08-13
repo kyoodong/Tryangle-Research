@@ -147,7 +147,7 @@ def get_dataset(dir, image_size):
 
 #%%
 
-dataset_dir = 'tiny-imagenet-200'
+dataset_dir = 'datas/tiny-imagenet-200'
 train_dir = '{}/train'.format(dataset_dir)
 validation_dir = '{}/val/images'.format(dataset_dir)
 test_dir = '{}/test/images'.format(dataset_dir)
@@ -164,24 +164,12 @@ while True:
     data = line.split('\t')
     directory = data[0]
     labels = data[1].replace('\n', '').replace(' ', '').split(',')
-
-    # for label in labels:
-    #     if label not in word_bag:
-    #         word_bag[label] = 1
-    #         word_bag_list.append(label)
     word_bag_list.append(directory)
-    # word_map[directory] = [word_bag[label] for label in labels]
 
 print('category count = ', len(word_bag_list))
 
 word_bag_list = np.array(word_bag_list)
 word_file.close()
-
-# Get train set
-# train_dir_list = glob(train_dir)
-# for dir in train_dir_list:
-#     image_dir = '{}/images'.format(dir)
-#     images = glob(image_dir)
 
 
 def get_label(path):
@@ -207,19 +195,12 @@ def process_path(path):
 
 
 train_ds = tf.data.Dataset.list_files('{}/*/images/*'.format(train_dir)).shuffle(1000)
-# train_ds = tf.data.Dataset.list_files('{}/n01443537/images/*'.format(train_dir)).shuffle(1000)
 train_ds = train_ds.map(process_path, num_parallel_calls=BATCH_SIZE).batch(BATCH_SIZE)
 
 valid_image_paths = glob("{}/*".format(validation_dir))
 valid_annotation_path = "{}/{}/val_annotations.txt".format(dataset_dir, 'val')
 valid_images = []
 valid_image_labels = []
-
-# for valid_image_path in valid_image_paths:
-#     image = Image.open(valid_image_path)
-#     image = np.array(image)
-#     image = (image / 255.0).astype(np.float32)
-#     valid_images.append(image)
 
 val_label_dict = dict()
 valid_annotation_file = open(valid_annotation_path, 'r')
@@ -233,19 +214,7 @@ while True:
 
 
 valid_image_labels = np.array(valid_image_labels)
-# print(valid_image_labels.shape, valid_images.shape)
-# valid_ds = tf.data.Dataset.from_tensor_slices([valid_images, valid_image_labels]).batch(BATCH_SIZE)
 valid_annotation_file.close()
-
-# valid_ds
-# print(valid_ds.take(0))
-
-# train_ds = tf.keras.preprocessing.image_dataset_from_directory(train_dir, validation_split=0.2,
-#                                                                subset='training', seed=123,
-#                                                                image_size=IMAGE_SIZE,
-#                                                                batch_size=BATCH_SIZE)
-
-# class_name = train_ds.class_names
 
 
 def process_valid_path(path):
@@ -295,30 +264,6 @@ class ResidualLayer(Model):
         return inputs
 
 
-#%%
-
-# class RPN(Model):
-#     def __init__(self):
-#         super(RPN, self).__init__()
-#
-#     def get_anchor(self, inputs):
-#         anchor_list = list()
-#         for anchor_size in ANCHOR_SIZES:
-#             for anchor_ratio in ANCHOR_RATIOS:
-#                 anchor_list.append()
-#
-#     def sliding_window(self, inputs):
-#         for x in range(SUBSAMPLED_IMAGE_SIZE[0]):
-#             for y in range(SUBSAMPLED_IMAGE_SIZE[1]):
-#                 window = tf.slice(inputs, (x, y, 0), (3, 3, 256))
-#                 self.get_anchor(window)
-#
-#     def call(self, inputs, training=None, mask=None):
-#         print("inputs = {}".format(inputs))
-#         inputs = tf.map_fn(self.sliding_window, inputs)
-
-#%%
-
 # ResNet
 resnet_input = Input((IMAGE_SIZE[0], IMAGE_SIZE[1], 3), name='ResNet_Input')
 x = Conv2D(64, (7, 7), (2, 2), padding='same', name='ResNet_InitialConv2D')(resnet_input)
@@ -331,7 +276,7 @@ x = GlobalAveragePooling2D()(x)
 output = Dense(len(word_bag_list), activation='softmax')(x)
 
 
-checkpoint_path = "tiny_imagenet/cp.ckpt"
+checkpoint_path = "datas/tiny_imagenet/cp.ckpt"
 checkpoint_dir = os.path.dirname(checkpoint_path)
 
 # 체크포인트 콜백 만들기
@@ -346,9 +291,10 @@ def loss(y_true, y_pred):
     return K.categorical_crossentropy(y_true, y_pred)
 
 
+
 model = Model(resnet_input, output)
 model.load_weights(checkpoint_path)
-optimizer = tf.keras.optimizers.Adam(learning_rate=1e-1)
-model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'], run_eagerly=True)
-model.fit(train_ds, batch_size=BATCH_SIZE, epochs=EPOCHS, callbacks=[cp_callback],
-          validation_data=valid_ds, validation_batch_size=BATCH_SIZE, validation_freq=int(EPOCHS / 5))
+optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
+
+model.compile(optimizer=optimizer, loss=optimizer, metrics=['accuracy'], run_eagerly=False)
+model.fit(train_ds, batch_size=BATCH_SIZE, epochs=EPOCHS, callbacks=[cp_callback])
