@@ -4,14 +4,16 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-src = cv2.imread('images/18443993_1118340654938583_6168835005821747200_n.jpg')
+src = cv2.imread('images/test4.jpg')
 dst = src.copy()
 gray = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
-canny = cv2.Canny(gray, 5000, 1500, apertureSize=5, L2gradient=True)
-# plt.imshow(canny)
-# plt.show()
+plt.imshow(gray, cmap='gray', vmin=0, vmax=255)
+plt.show()
+canny = cv2.Canny(gray, 2500, 1500, apertureSize=5, L2gradient=True)
+plt.imshow(canny)
+plt.show()
 
-lines = cv2.HoughLines(canny, 0.8, (np.pi) / 180, 100, srn=100, stn=200, min_theta=0, max_theta=np.pi)
+lines = cv2.HoughLines(canny, 0.8, (np.pi) / 90, 100, srn=100, stn=200, min_theta=0, max_theta=np.pi)
 
 for i in lines:
     rho, theta = i[0]
