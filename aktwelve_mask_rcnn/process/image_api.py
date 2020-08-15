@@ -82,8 +82,12 @@ def get_contour_center_point(image, threshold):
                     # bfs 를 돌려서 외곽선 탐색
                     l, cog = __get_contour_center_point(image[:, :, i], w, h, visits, threshold)
                     layered_image[:, :, i] += l
-                    if cog:
-                        cogs.append(cog)
+                    cogs.append(cog)
     return layered_image, cogs
 
 
+def recommend_object_position(center_point, image, is_person=False):
+    print('center_point', center_point)
+    print('image', image.shape)
+    print('is_person', is_person)
+    return ""
