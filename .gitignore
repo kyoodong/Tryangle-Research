@@ -524,3 +524,5 @@ akwelv_mask_rcnn/.venv
 akwelv_mask_rcnn/venv/
 akwelv_mask_rcnn/ENV/
 
+
+*/.idea/
