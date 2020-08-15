@@ -481,4 +481,6 @@ dmypy.json
 .pytype/
 
 # End of https://www.toptal.com/developers/gitignore/api/pycharm,python
-*/.idea
+*/.idea/**
+MaskRcnn/datas
+MaskRcnn/datas/**
