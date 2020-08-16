@@ -11,6 +11,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from process import image_api, hough
 import cv2
+import copy
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath("../")
@@ -91,7 +92,7 @@ class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
 # Load a random image from the images folder
 file_names = next(os.walk(IMAGE_DIR))[2]
 # image = skimage.io.imread(os.path.join(IMAGE_DIR, random.choice(file_names)))
-image = skimage.io.imread(os.path.join(IMAGE_DIR, "test3.jpg"))
+image = skimage.io.imread(os.path.join(IMAGE_DIR, "test1.jpg"))
 
 # Run detection
 results = model.detect([image], verbose=1)
@@ -116,11 +117,15 @@ for index, center_point in enumerate(center_points):
         print(image_api.recommend_object_position(center_point, image, r['rois'][index], r['class_ids'][index] == 1))
 
 important_lines = hough.find_hough_line(image)
+line_image = copy.copy(image)
 for line in important_lines:
     all_layered_image = cv2.line(all_layered_image, (line[0], line[1]), (line[2], line[3]), 1, 2)
+    line_image = cv2.line(line_image, (line[0], line[1]), (line[2], line[3]), 1, 2)
 
 # 선으로 이루어진 객체들 이미지화
 plt.imshow(all_layered_image, 'gray', vmin=0, vmax=1)
+plt.show()
+plt.imshow(line_image)
 plt.show()
 
 visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'],

@@ -112,8 +112,6 @@ def recommend_object_position(center_point, image, roi, is_person=False):
     if is_person:
         # 사진 내 여러 사람이 있을 수 있으므로 해당 객체만을 오려내서 pose estimation 을 돌림
         cropped_image = image[roi[0]:roi[2], roi[1]:roi[3]]
-        plt.imshow(cropped_image)
-        plt.show()
 
         humans = estimator.inference(cropped_image, upsample_size=4.0)
         print(humans)
