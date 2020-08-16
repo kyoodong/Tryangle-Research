@@ -1,3 +1,4 @@
+from enum import Enum
 import numpy as np
 import cv2
 import os
@@ -5,11 +6,12 @@ import sys
 from tf_pose.estimator import TfPoseEstimator
 from tf_pose.networks import get_graph_path, model_wh
 from tf_pose import common
+import matplotlib.pyplot as plt
 
 dx = [0, 1, 0, -1]
 dy = [-1, 0, 1, 0]
 
-estimator = TfPoseEstimator(get_graph_path('cmu'), target_size=(432, 368))
+estimator = TfPoseEstimator(get_graph_path('mobilenet_v2_large'))
 print('estimator is ready')
 
 
@@ -96,21 +98,108 @@ def get_contour_center_point(image, threshold):
     return layered_image, cogs
 
 
-def recommend_object_position(center_point, image, is_person=False):
-    if is_person:
-        humans = estimator.inference(image, upsample_size=4.0)
-        image_h, image_w = image.shape[:2]
-        centers = {}
-        for human in humans:
-            # draw point
-            for i in range(common.CocoPart.Background.value):
-                if i not in human.body_parts.keys():
-                    continue
+class HumanPose(Enum):
+    Unknown = 0
+    Stand = 1
+    Sit = 2
 
-                body_part = human.body_parts[i]
-                center = (int(body_part.x * image_w + 0.5), int(body_part.y * image_h + 0.5))
-                centers[i] = center
-                # cv2.circle(npimg, center, 3, common.CocoColors[i], thickness=3, lineType=8, shift=0)
+
+def recommend_object_position(center_point, image, roi, is_person=False):
+    image_h, image_w = image.shape[:2]
+    error = image_w // 100
+    recommendation_text_list = list()
+
+    if is_person:
+        # 사진 내 여러 사람이 있을 수 있으므로 해당 객체만을 오려내서 pose estimation 을 돌림
+        cropped_image = image[roi[0]:roi[2], roi[1]:roi[3]]
+        plt.imshow(cropped_image)
+        plt.show()
+
+        humans = estimator.inference(cropped_image, upsample_size=3.0)
         print(humans)
-    return ''
+        human_pose = HumanPose.Unknown
+
+        # test1.jpg 같은 경우 뒷 모습이라 그런가 pose-estimation 이 안먹음
+        for human in humans:
+            left_ankle = -1
+            right_ankle = -1
+            left_hip = -1
+            right_hip = -1
+            left_knee = -1
+            right_knee = -1
+            gamma = 0.05
+
+            if common.CocoPart.LAnkle.value in human.body_parts.keys():
+                left_ankle = human.body_parts[common.CocoPart.LAnkle.value].y
+
+            if common.CocoPart.RAnkle.value in human.body_parts.keys():
+                right_ankle = human.body_parts[common.CocoPart.RAnkle.value].y
+
+            if common.CocoPart.LHip.value in human.body_parts.keys():
+                left_hip = human.body_parts[common.CocoPart.LHip.value].y
+
+            if common.CocoPart.RHip.value in human.body_parts.keys():
+                right_hip = human.body_parts[common.CocoPart.RHip.value].y
+
+            if common.CocoPart.LKnee.value in human.body_parts.keys():
+                left_knee = human.body_parts[common.CocoPart.LKnee.value].y
+
+            if common.CocoPart.RKnee.value in human.body_parts.keys():
+                right_knee = human.body_parts[common.CocoPart.RKnee.value].y
+
+            # 무릎의 높이가 엉덩이의 높이보다 낮은 경우, 서 있다(stand)고 판단
+            if (left_knee != -1 and left_hip != -1 and left_knee > left_hip + gamma) or\
+                    (right_knee != -1 and right_hip != -1 and right_knee > right_hip + gamma):
+                human_pose = HumanPose.Stand
+                break
+
+            # draw point
+            # for i in range(common.CocoPart.Background.value):
+            #     if i not in human.body_parts.keys():
+            #         continue
+            #
+            #     body_part = human.body_parts[i]
+            #     center = (int(body_part.x * image_w + 0.5), int(body_part.y * image_h + 0.5))
+            #     centers[i] = center
+            #     cv2.circle(npimg, center, 3, common.CocoColors[i], thickness=3, lineType=8, shift=0)
+
+        if human_pose == HumanPose.Stand:
+            # 사람 roi의 맨 밑 선을 발 끝이라고 판단
+            foot_position = roi[2]
+            foot_gamma = 10
+            if image_h > foot_position + foot_gamma:
+                recommendation_text_list.append(("발 끝을 사진 맨 밑에 맞추세요",
+                                                 (center_point[0], center_point[1] + image_h - foot_position)))
+
+        print(humans)
+
+
+    left_side = int(image_w / 3)
+    right_side = int(image_w / 3 * 2)
+    middle_side = int(image_w / 2)
+
+    left_diff = int(np.abs(left_side - center_point[0]))
+    right_diff = int(np.abs(right_side - center_point[0]))
+    middle_diff = int(np.abs(middle_side - center_point[0]))
+
+    if left_diff < right_diff:
+        if left_diff < middle_diff:
+            # 왼쪽에 치우친 경우
+            if left_diff > error:
+                recommendation_text_list.append(("삼분할법을 지키세요", (left_side, center_point[1])))
+        else:
+            # 중앙에 있는 경우
+            if middle_diff > error:
+                recommendation_text_list.append(("좌우 대칭을 맞춰주세요", (middle_side, center_point[1])))
+    else:
+        if right_diff < middle_diff:
+            # 오른쪽에 치우친 경우
+            if right_diff > error:
+                recommendation_text_list.append(("삼분할법을 지키세요", (right_side, center_point[1])))
+        else:
+            # 중앙에 있는 경우
+            if middle_diff > error:
+                recommendation_text_list.append(("좌우 대칭을 맞춰주세요", (middle_side, center_point[1])))
+
+    return recommendation_text_list
 
