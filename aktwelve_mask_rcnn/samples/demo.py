@@ -91,7 +91,7 @@ class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
 # Load a random image from the images folder
 file_names = next(os.walk(IMAGE_DIR))[2]
 # image = skimage.io.imread(os.path.join(IMAGE_DIR, random.choice(file_names)))
-image = skimage.io.imread(os.path.join(IMAGE_DIR, "test1.jpg"))
+image = skimage.io.imread(os.path.join(IMAGE_DIR, "test2.jpg"))
 
 # Run detection
 results = model.detect([image], verbose=1)
@@ -113,7 +113,7 @@ for i in range(layered_image.shape[-1]):
 for index, center_point in enumerate(center_points):
     if center_point:
         all_layered_image = cv2.circle(all_layered_image, center_point, 5, 1, 2)
-        print(image_api.recommend_object_position(center_point, image, r['class_ids'][index] == 1))
+        print(image_api.recommend_object_position(center_point, image, r['rois'][index], r['class_ids'][index] == 1))
 
 plt.imshow(all_layered_image, 'gray', vmin=0, vmax=1)
 plt.show()
