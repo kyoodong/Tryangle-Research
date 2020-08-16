@@ -115,7 +115,7 @@ def recommend_object_position(center_point, image, roi, is_person=False):
         plt.imshow(cropped_image)
         plt.show()
 
-        humans = estimator.inference(cropped_image, upsample_size=3.0)
+        humans = estimator.inference(cropped_image, upsample_size=4.0)
         print(humans)
         human_pose = HumanPose.Unknown
 
@@ -170,8 +170,6 @@ def recommend_object_position(center_point, image, roi, is_person=False):
             if image_h > foot_position + foot_gamma:
                 recommendation_text_list.append(("발 끝을 사진 맨 밑에 맞추세요",
                                                  (center_point[0], center_point[1] + image_h - foot_position)))
-
-        print(humans)
 
 
     left_side = int(image_w / 3)

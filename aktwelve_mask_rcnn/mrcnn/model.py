@@ -1385,11 +1385,11 @@ def build_detection_targets(rpn_rois, gt_class_ids, gt_boxes, gt_masks, config):
     # Need more?
     remaining = config.TRAIN_ROIS_PER_IMAGE - keep.shape[0]
     if remaining > 0:
-        # Looks like we don't have enough samples to maintain the desired
+        # Looks like we don't have enough codes to maintain the desired
         # balance. Reduce requirements and fill in the rest. This is
         # likely different from the Mask RCNN paper.
 
-        # There is a small chance we have neither fg nor bg samples.
+        # There is a small chance we have neither fg nor bg codes.
         if keep.shape[0] == 0:
             # Pick bg regions with easier IoU threshold
             bg_ids = np.where(rpn_roi_iou_max < 0.5)[0]
@@ -1648,7 +1648,7 @@ class DataGenerator(KU.Sequence):
 
         dataset: The Dataset object to pick data from
         config: The model config object
-        shuffle: If True, shuffles the samples before every epoch
+        shuffle: If True, shuffles the codes before every epoch
         augmentation: Optional. An imgaug (https://github.com/aleju/imgaug) augmentation.
             For example, passing imgaug.augmenters.Fliplr(0.5) flips images
             right/left 50% of the time.
