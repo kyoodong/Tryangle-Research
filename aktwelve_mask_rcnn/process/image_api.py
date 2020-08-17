@@ -199,3 +199,26 @@ def recommend_object_position(center_point, image, roi, is_person=False):
 
     return recommendation_text_list
 
+
+def recommend_line_position(line):
+    upper_threshold = 25
+    lower_threshold = 5
+    recommendation_message_list = list()
+
+    x1 = line[0]
+    y1 = line[1]
+    x2 = line[2]
+    y2 = line[3]
+
+    ydiff = abs(y1 - y2)
+    xdiff = abs(x1 - x2)
+
+    # 수평선 양 끝 점의 차이가 lower_threshold 초과이면 가이드 멘트
+    if upper_threshold > ydiff > lower_threshold:
+        recommendation_message_list.append("수평을 맞춰주세요")
+
+    # 수직선
+    elif upper_threshold > xdiff > lower_threshold:
+        recommendation_message_list.append("수직을 맞춰주세요")
+
+    return recommendation_message_list

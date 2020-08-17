@@ -100,29 +100,42 @@ results = model.detect([image], verbose=1)
 # Visualize results
 r = results[0]
 
-# 외곽선만 따도록 수정
-layered_image, center_points = image_api.get_contour_center_point(r['masks'], 0.01)
+# 객체마다 외곽선만 따도록 수정
+# [image_height][image_width][num_of_object]
+# 위와 같은 shape 로 이미지가 처리되며 num_of_object 개수로 나뉜 이미지들을 하나의 이미지로 합쳐야함
+layered_images, center_points = image_api.get_contour_center_point(r['masks'], 0.01)
 
-# for i in range(r['masks'].shape[-1]):
-#     plt.imshow(layered_image[:,:, i])
-#     plt.show()
 
+# all_layered_image 는 레이아웃화 된 객체 이미지들을 하나의 이미지로 합치는 변수
 all_layered_image = np.zeros([image.shape[0], image.shape[1], 1])
-for i in range(layered_image.shape[-1]):
-    all_layered_image[:, :, 0] += layered_image[:, :, i]
 
+# 합치기
+for i in range(layered_images.shape[-1]):
+    all_layered_image[:, :, 0] += layered_images[:, :, i]
+
+# 객체의 중앙 지점을 파악하여 그에 맞는 가이드를 요청함
 for index, center_point in enumerate(center_points):
+    # 객체의 중앙 지점이 없을 수 있음. 일정 크기 이상의 오브젝트만을 인식하기에 MaskRCNN에 의해 검출되었으나 무시되기도 하기 때문
     if center_point:
         all_layered_image = cv2.circle(all_layered_image, center_point, 5, 1, 2)
-        print(image_api.recommend_object_position(center_point, image, r['rois'][index], r['class_ids'][index] == 1))
+        guide_message_list = image_api.recommend_object_position(center_point, image, r['rois'][index], r['class_ids'][index] == 1)
+        print(guide_message_list)
 
+# 중요한 선을 찾음
 important_lines = hough.find_hough_line(image)
+for line in important_lines:
+    guide_message_list = image_api.recommend_line_position(line)
+    print(guide_message_list)
+
+
+# 중요한 선을 시각화하기 위함
 line_image = copy.copy(image)
 for line in important_lines:
     all_layered_image = cv2.line(all_layered_image, (line[0], line[1]), (line[2], line[3]), 1, 2)
     line_image = cv2.line(line_image, (line[0], line[1]), (line[2], line[3]), 1, 2)
 
-# 선으로 이루어진 객체들 이미지화
+
+# 선으로 이루어진 객체들 시각화
 plt.imshow(all_layered_image, 'gray', vmin=0, vmax=1)
 plt.show()
 plt.imshow(line_image)
