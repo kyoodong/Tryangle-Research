@@ -1,6 +1,3 @@
-#%% md
-#%%
-
 import os
 import sys
 import random
@@ -10,9 +7,10 @@ import skimage.io
 import matplotlib
 import matplotlib.pyplot as plt
 from process import image_api, hough
-from process.object import Object
+from process.object import Object, Human
 import cv2
 import copy
+from process.pose import CVPoseEstimator, PoseGuider, CvClassifier, HumanPose
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath("../")
@@ -49,7 +47,7 @@ class InferenceConfig(coco.CocoConfig):
 config = InferenceConfig()
 config.display()
 
-# Create model object in inference mode.
+# Create model obj in inference mode.
 model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config=config)
 
 # Load weights trained on MS-COCO
@@ -86,7 +84,7 @@ class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
 
 #%% md
 
-## Run Object Detection
+## Run obj Detection
 
 #%%
 
@@ -102,15 +100,29 @@ results = model.detect([image], verbose=1)
 r = results[0]
 
 # 객체마다 외곽선만 따도록 수정
-# [image_height][image_width][num_of_object]
-# 위와 같은 shape 로 이미지가 처리되며 num_of_object 개수로 나뉜 이미지들을 하나의 이미지로 합쳐야함
+# [image_height][image_width][num_of_obj]
+# 위와 같은 shape 로 이미지가 처리되며 num_of_obj 개수로 나뉜 이미지들을 하나의 이미지로 합쳐야함
 layered_images, center_points = image_api.get_contour_center_point(r['masks'], 0.01)
 
-object_list = list()
+obj_list = list()
+cv_estimator = CVPoseEstimator()
+
 for index, center_point in enumerate(center_points):
     if center_point:
-        object_list.append(
-            Object(r['rois'][index], r['masks'][index], r['class_ids'][index], r['scores'][index], center_point))
+        obj = Object(r['rois'][index], r['masks'][index], r['class_ids'][index], r['scores'][index], center_point)
+        if obj.is_person():
+            # 사진 내 여러 사람이 있을 수 있으므로 해당 객체만을 오려내서 pose estimation 을 돌림
+            cropped_image = image[obj.roi[0]:obj.roi[2], obj.roi[1]:obj.roi[3]]
+
+            # humans = tf_estimator.inference(cropped_image, upsample_size=4.0)
+            pose = cv_estimator.inference(cropped_image)
+            pose_classifier = CvClassifier()
+            pose_class = pose_classifier.run(pose)
+            human = Human(obj, pose, pose_class, cropped_image)
+            obj_list.append(human)
+
+        else:
+            obj_list.append(obj)
 
 
 
@@ -121,35 +133,37 @@ all_layered_image = np.zeros([image.shape[0], image.shape[1], 1])
 for i in range(layered_images.shape[-1]):
     all_layered_image[:, :, 0] += layered_images[:, :, i]
 
+
 # 객체의 중앙 지점을 파악하여 그에 맞는 가이드를 요청함
-for object in object_list:
-    all_layered_image = cv2.circle(all_layered_image, object.center_point, 5, 1, 2)
-    guide_message_list = image_api.recommend_object_position(object, image)
+for obj in obj_list:
+    all_layered_image = cv2.circle(all_layered_image, obj.center_point, 5, 1, 2)
+    guide_message_list = image_api.recommend_obj_position(obj, image)
     print(guide_message_list)
 
 # 중요한 선을 찾음
 important_lines = hough.find_hough_line(image)
-for line in important_lines:
-    guide_message_list = image_api.recommend_line_position(line)
-    print(guide_message_list)
+if important_lines:
+    for line in important_lines:
+        guide_message_list = image_api.recommend_line_position(line)
+        print(guide_message_list)
 
 
 # 중요한 선을 시각화하기 위함
-line_image = copy.copy(image)
-for line in important_lines:
-    all_layered_image = cv2.line(all_layered_image, (line[0], line[1]), (line[2], line[3]), 1, 2)
-    line_image = cv2.line(line_image, (line[0], line[1]), (line[2], line[3]), 1, 2)
-
+if important_lines:
+    line_image = copy.copy(image)
+    for line in important_lines:
+        all_layered_image = cv2.line(all_layered_image, (line[0], line[1]), (line[2], line[3]), 1, 2)
+        line_image = cv2.line(line_image, (line[0], line[1]), (line[2], line[3]), 1, 2)
 
 # 선으로 이루어진 객체들 시각화
 plt.imshow(all_layered_image, 'gray', vmin=0, vmax=1)
-plt.show()
-plt.imshow(line_image)
 plt.show()
 
 visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'],
                             class_names, r['scores'])
 
 
-# image_api.get_guide_message_for_object_line()
+if obj_list and important_lines:
+    guide_message_list = image_api.get_guide_message_for_obj_line(obj_list, important_lines, image)
+    print(guide_message_list)
 

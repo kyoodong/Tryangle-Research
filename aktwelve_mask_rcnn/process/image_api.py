@@ -7,12 +7,12 @@ from tf_pose.networks import get_graph_path, model_wh
 import matplotlib.pyplot as plt
 from process.pose import CVPoseEstimator, PoseGuider, CvClassifier, HumanPose
 from process.object import Object, Human
+import numpy as np
 
 dx = [0, 1, 0, -1]
 dy = [-1, 0, 1, 0]
 
 # tf_estimator = TfPoseEstimator(get_graph_path('mobilenet_v2_large'))
-cv_estimator = CVPoseEstimator()
 print('estimator is ready')
 
 
@@ -99,23 +99,14 @@ def get_contour_center_point(image, threshold):
     return layered_image, cogs
 
 
-def recommend_object_position(object, image):
+def recommend_obj_position(obj, image):
     image_h, image_w = image.shape[:2]
     error = image_w // 100
     recommendation_text_list = list()
 
-    if object.is_person():
-        # 사진 내 여러 사람이 있을 수 있으므로 해당 객체만을 오려내서 pose estimation 을 돌림
-        cropped_image = image[object.roi[0]:object.roi[2], object.roi[1]:object.roi[3]]
-
-        # humans = tf_estimator.inference(cropped_image, upsample_size=4.0)
-        pose = cv_estimator.inference(cropped_image)
-        pose_classifier = CvClassifier()
+    if obj.is_person():
         pose_guider = PoseGuider()
-        pose_class = pose_classifier.run(pose)
-        human = Human(object, pose, pose_class, cropped_image)
-
-        pose_guide = pose_guider.run(human, image)
+        pose_guide = pose_guider.run(obj, image)
         if pose_guide:
             recommendation_text_list.append(pose_guide)
 
@@ -123,28 +114,28 @@ def recommend_object_position(object, image):
     right_side = int(image_w / 3 * 2)
     middle_side = int(image_w / 2)
 
-    left_diff = int(np.abs(left_side - object.center_point[0]))
-    right_diff = int(np.abs(right_side - object.center_point[0]))
-    middle_diff = int(np.abs(middle_side - object.center_point[0]))
+    left_diff = int(np.abs(left_side - obj.center_point[0]))
+    right_diff = int(np.abs(right_side - obj.center_point[0]))
+    middle_diff = int(np.abs(middle_side - obj.center_point[0]))
 
     if left_diff < right_diff:
         if left_diff < middle_diff:
             # 왼쪽에 치우친 경우
             if left_diff > error:
-                recommendation_text_list.append(("삼분할법을 지키세요", (left_side, object.center_point[1])))
+                recommendation_text_list.append(("삼분할법을 지키세요", (left_side, obj.center_point[1])))
         else:
             # 중앙에 있는 경우
             if middle_diff > error:
-                recommendation_text_list.append(("좌우 대칭을 맞춰주세요", (middle_side, object.center_point[1])))
+                recommendation_text_list.append(("좌우 대칭을 맞춰주세요", (middle_side, obj.center_point[1])))
     else:
         if right_diff < middle_diff:
             # 오른쪽에 치우친 경우
             if right_diff > error:
-                recommendation_text_list.append(("삼분할법을 지키세요", (right_side, object.center_point[1])))
+                recommendation_text_list.append(("삼분할법을 지키세요", (right_side, obj.center_point[1])))
         else:
             # 중앙에 있는 경우
             if middle_diff > error:
-                recommendation_text_list.append(("좌우 대칭을 맞춰주세요", (middle_side, object.center_point[1])))
+                recommendation_text_list.append(("좌우 대칭을 맞춰주세요", (middle_side, obj.center_point[1])))
 
     return recommendation_text_list
 
@@ -173,5 +164,29 @@ def recommend_line_position(line):
     return recommendation_message_list
 
 
-def get_guide_message_for_object_line(objects, lines):
-    pass
+def get_guide_message_for_obj_line(objs, lines, image):
+    print(objs)
+    print(lines)
+
+    guide_message_list = list()
+    threshold = 10
+    for obj in objs:
+        if obj.is_person():
+            joint_list = [("Neck", "목", "어깨")]
+
+            # 선이 관절을 지나는지 검사
+            for joint in joint_list:
+                if obj.pose[Human.BODY_PARTS[joint[0]]]:
+                    for line in lines:
+                        neck = np.array([obj.pose[Human.BODY_PARTS[joint[0]]][0] + obj.roi[1],
+                                         obj.pose[Human.BODY_PARTS[joint[0]]][1] + obj.roi[0]])
+
+                        line_p1 = np.array([line[0], line[1]])
+                        line_p2 = np.array([line[2], line[3]])
+                        distance = np.linalg.norm(np.cross(line_p2 - line_p1, line_p1 - neck)) / np.linalg.norm(
+                            line_p2 - line_p1)
+                        if distance < threshold:
+                            guide_message_list.append("선이 {}을 지나는 것은 좋지 않습니다. {}를 지나게 해보세요".format(joint[1], joint[2]))
+
+
+    return guide_message_list
