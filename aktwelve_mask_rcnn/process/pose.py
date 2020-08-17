@@ -145,8 +145,8 @@ class CvClassifier(PoseClassifier):
         if human[BODY_PARTS["RKnee"]]:
             self.right_knee = human[BODY_PARTS["RKnee"]][1]
 
-    def run(self, human):
-        self.__extract(human)
+    def run(self, pose):
+        self.__extract(pose)
 
         # 무릎의 높이가 엉덩이의 높이보다 낮은 경우, 서 있다(stand)고 판단
         if (self.left_knee != -1 and self.left_hip != -1 and self.left_knee > self.left_hip + self.gamma) or \
@@ -160,16 +160,16 @@ class PoseGuider:
     def __init__(self):
         self.foot_lower_threshold = 10
 
-    def run(self, cropped_image, human, human_pose, image, roi):
+    def run(self, human, image):
         height, width = image.shape[0], image.shape[1]
-        cropped_height, cropped_width = cropped_image.shape[0], cropped_image.shape[1]
+        cropped_height, cropped_width = human.cropped_image.shape[0], human.cropped_image.shape[1]
 
-        if human_pose == HumanPose.Stand:
+        if human.pose_class == HumanPose.Stand:
             # 서 있지만 발목이 잘린 경우
-            if human[BODY_PARTS["LAnkle"]] is None or human[BODY_PARTS["RAnkle"]] is None:
+            if human.pose[BODY_PARTS["LAnkle"]] is None or human.pose[BODY_PARTS["RAnkle"]] is None:
                 return "사람 발목이 잘리지 않게 하세요"
 
-            if height > roi[2] + self.foot_lower_threshold:
+            if height > human.roi[2] + self.foot_lower_threshold:
                 return "발 끝을 사진 맨 밑에 맞추세요"
 
         return None
