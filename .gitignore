@@ -548,3 +548,4 @@ akwelv_mask_rcnn/ENV/
 
 */.idea/
 *.h5
+*.caffemodel
