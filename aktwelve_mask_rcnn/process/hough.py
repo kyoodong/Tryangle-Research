@@ -16,10 +16,14 @@ def find_hough_line(image):
     canny = cv2.Canny(erode, 2500, 1500, apertureSize=5, L2gradient=True)
     lines = cv2.HoughLinesP(canny, 1, np.pi / 360, 100, minLineLength=200, maxLineGap=200)
 
+    if lines is None:
+        return None
+
     # 수평선에서는 좌우, 수직선에서는 상하의 점의 수평 차이가 gamma 미만이면 수평, 수직선이라 판단하고 가이드를 제공
     gamma = 25
     clusters = list()
     result = list()
+
     for line in lines:
         # HoughP
         x1, y1, x2, y2 = line[0]

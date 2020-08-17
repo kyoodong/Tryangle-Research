@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import os
 from tf_pose import common
 from enum import Enum
+from process.object import Human
+import numpy as np
 
 
 class HumanPose(Enum):
@@ -13,16 +15,6 @@ class HumanPose(Enum):
 
 # caffemodel 파일 다운로드
 # wget -c http://posefs1.perception.cs.cmu.edu/OpenPose/models/pose/mpi/pose_iter_160000.caffemodel -P pose
-
-BODY_PARTS = {"Head": 0, "Neck": 1, "RShoulder": 2, "RElbow": 3, "RWrist": 4,
-                   "LShoulder": 5, "LElbow": 6, "LWrist": 7, "RHip": 8, "RKnee": 9,
-                   "RAnkle": 10, "LHip": 11, "LKnee": 12, "LAnkle": 13, "Chest": 14,
-                   "Background": 15}
-
-POSE_PAIRS = [["Head", "Neck"], ["Neck", "RShoulder"], ["RShoulder", "RElbow"],
-                   ["RElbow", "RWrist"], ["Neck", "LShoulder"], ["LShoulder", "LElbow"],
-                   ["LElbow", "LWrist"], ["Neck", "Chest"], ["Chest", "RHip"], ["RHip", "RKnee"],
-                   ["RKnee", "RAnkle"], ["Chest", "LHip"], ["LHip", "LKnee"], ["LKnee", "LAnkle"]]
 
 
 class CVPoseEstimator:
@@ -41,7 +33,7 @@ class CVPoseEstimator:
         out = self.net.forward()
         points = list()
 
-        for i in range(len(BODY_PARTS)):
+        for i in range(len(Human.BODY_PARTS)):
             # Slice heatmap of corresponging body's part.
             heatMap = out[0, i, :, :]
 
@@ -58,11 +50,11 @@ class CVPoseEstimator:
         # for pair in POSE_PAIRS:
         #     partFrom = pair[0]
         #     partTo = pair[1]
-        #     assert (partFrom in BODY_PARTS)
-        #     assert (partTo in BODY_PARTS)
+        #     assert (partFrom in Human.BODY_PARTS)
+        #     assert (partTo in Human.BODY_PARTS)
         #
-        #     idFrom = BODY_PARTS[partFrom]
-        #     idTo = BODY_PARTS[partTo]
+        #     idFrom = Human.BODY_PARTS[partFrom]
+        #     idTo = Human.BODY_PARTS[partTo]
         #     if points[idFrom] and points[idTo]:
         #         cv2.line(image, points[idFrom], points[idTo], (255, 74, 0), 3)
         #         cv2.ellipse(image, points[idFrom], (4, 4), 0, 0, 360, (255, 255, 255), cv2.FILLED)
@@ -127,23 +119,23 @@ class CvClassifier(PoseClassifier):
         self.left_knee = -1
         self.right_knee = -1
 
-        if human[BODY_PARTS["LAnkle"]]:
-            self.left_ankle = human[BODY_PARTS["LAnkle"]][1]
+        if human[Human.BODY_PARTS["LAnkle"]]:
+            self.left_ankle = human[Human.BODY_PARTS["LAnkle"]][1]
 
-        if human[BODY_PARTS["RAnkle"]]:
-            self.right_ankle = human[BODY_PARTS["RAnkle"]][1]
+        if human[Human.BODY_PARTS["RAnkle"]]:
+            self.right_ankle = human[Human.BODY_PARTS["RAnkle"]][1]
 
-        if human[BODY_PARTS["LHip"]]:
-            self.left_hip = human[BODY_PARTS["LHip"]][1]
+        if human[Human.BODY_PARTS["LHip"]]:
+            self.left_hip = human[Human.BODY_PARTS["LHip"]][1]
 
-        if human[BODY_PARTS["RHip"]]:
-            self.right_hip = human[BODY_PARTS["RHip"]][1]
+        if human[Human.BODY_PARTS["RHip"]]:
+            self.right_hip = human[Human.BODY_PARTS["RHip"]][1]
 
-        if human[BODY_PARTS["LKnee"]]:
-            self.left_knee = human[BODY_PARTS["LKnee"]][1]
+        if human[Human.BODY_PARTS["LKnee"]]:
+            self.left_knee = human[Human.BODY_PARTS["LKnee"]][1]
 
-        if human[BODY_PARTS["RKnee"]]:
-            self.right_knee = human[BODY_PARTS["RKnee"]][1]
+        if human[Human.BODY_PARTS["RKnee"]]:
+            self.right_knee = human[Human.BODY_PARTS["RKnee"]][1]
 
     def run(self, pose):
         self.__extract(pose)
@@ -162,12 +154,29 @@ class PoseGuider:
 
     def run(self, human, image):
         height, width = image.shape[0], image.shape[1]
-        cropped_height, cropped_width = human.cropped_image.shape[0], human.cropped_image.shape[1]
 
+        for key in Human.BODY_PARTS.keys():
+            if human.pose[Human.BODY_PARTS[key]] is not None:
+                center = np.array(human.pose[Human.BODY_PARTS[key]]) + np.array([human.roi[1], human.roi[0]])
+                center = tuple(center)
+                cv2.circle(image, center, 3, (255, 0, 0), thickness=3)
+
+        plt.imshow(image)
+        plt.show()
+
+        # 서 있는 경우
         if human.pose_class == HumanPose.Stand:
-            # 서 있지만 발목이 잘린 경우
-            if human.pose[BODY_PARTS["LAnkle"]] is None or human.pose[BODY_PARTS["RAnkle"]] is None:
-                return "사람 발목이 잘리지 않게 하세요"
+            gamma = 5
+
+            # 사람이 사진 밑쪽에 위치한 경우
+            if human.roi[2] + gamma > height:
+                # 발목이 잘린 경우
+                if human.pose[Human.BODY_PARTS["LAnkle"]] is None or human.pose[Human.BODY_PARTS["RAnkle"]] is None:
+                    return "관절(발목)이 잘리지 않게 발끝에 맞춰 찍어보세요"
+
+                # 무릎이 잘린 경우
+                if human.pose[Human.BODY_PARTS["LKnee"]] is None or human.pose[Human.BODY_PARTS["RKnee"]] is None:
+                    return "관절(무릎)이 잘리지 않게 허벅지에서 잘라보세요"
 
             if height > human.roi[2] + self.foot_lower_threshold:
                 return "발 끝을 사진 맨 밑에 맞추세요"
