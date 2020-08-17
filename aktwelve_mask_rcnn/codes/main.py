@@ -10,6 +10,7 @@ import skimage.io
 import matplotlib
 import matplotlib.pyplot as plt
 from process import image_api, hough
+from process.object import Object
 import cv2
 import copy
 
@@ -105,6 +106,13 @@ r = results[0]
 # 위와 같은 shape 로 이미지가 처리되며 num_of_object 개수로 나뉜 이미지들을 하나의 이미지로 합쳐야함
 layered_images, center_points = image_api.get_contour_center_point(r['masks'], 0.01)
 
+object_list = list()
+for index, center_point in enumerate(center_points):
+    if center_point:
+        object_list.append(
+            Object(r['rois'][index], r['masks'][index], r['class_ids'][index], r['scores'][index], center_point))
+
+
 
 # all_layered_image 는 레이아웃화 된 객체 이미지들을 하나의 이미지로 합치는 변수
 all_layered_image = np.zeros([image.shape[0], image.shape[1], 1])
@@ -114,12 +122,10 @@ for i in range(layered_images.shape[-1]):
     all_layered_image[:, :, 0] += layered_images[:, :, i]
 
 # 객체의 중앙 지점을 파악하여 그에 맞는 가이드를 요청함
-for index, center_point in enumerate(center_points):
-    # 객체의 중앙 지점이 없을 수 있음. 일정 크기 이상의 오브젝트만을 인식하기에 MaskRCNN에 의해 검출되었으나 무시되기도 하기 때문
-    if center_point:
-        all_layered_image = cv2.circle(all_layered_image, center_point, 5, 1, 2)
-        guide_message_list = image_api.recommend_object_position(center_point, image, r['rois'][index], r['class_ids'][index] == 1)
-        print(guide_message_list)
+for object in object_list:
+    all_layered_image = cv2.circle(all_layered_image, object.center_point, 5, 1, 2)
+    guide_message_list = image_api.recommend_object_position(object, image)
+    print(guide_message_list)
 
 # 중요한 선을 찾음
 important_lines = hough.find_hough_line(image)
@@ -144,6 +150,6 @@ plt.show()
 visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'],
                             class_names, r['scores'])
 
-#%%
 
+# image_api.get_guide_message_for_object_line()
 

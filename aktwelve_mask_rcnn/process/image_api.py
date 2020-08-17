@@ -6,6 +6,7 @@ from tf_pose.estimator import TfPoseEstimator
 from tf_pose.networks import get_graph_path, model_wh
 import matplotlib.pyplot as plt
 from process.pose import CVPoseEstimator, PoseGuider, CvClassifier, HumanPose
+from process.object import Object, Human
 
 dx = [0, 1, 0, -1]
 dy = [-1, 0, 1, 0]
@@ -98,56 +99,52 @@ def get_contour_center_point(image, threshold):
     return layered_image, cogs
 
 
-def recommend_object_position(center_point, image, roi, is_person=False):
+def recommend_object_position(object, image):
     image_h, image_w = image.shape[:2]
     error = image_w // 100
     recommendation_text_list = list()
 
-    if is_person:
+    if object.is_person():
         # 사진 내 여러 사람이 있을 수 있으므로 해당 객체만을 오려내서 pose estimation 을 돌림
-        cropped_image = image[roi[0]:roi[2], roi[1]:roi[3]]
+        cropped_image = image[object.roi[0]:object.roi[2], object.roi[1]:object.roi[3]]
 
         # humans = tf_estimator.inference(cropped_image, upsample_size=4.0)
-        humans = [cv_estimator.inference(cropped_image)]
-
-        print(humans)
+        pose = cv_estimator.inference(cropped_image)
         pose_classifier = CvClassifier()
         pose_guider = PoseGuider()
-        human_pose = HumanPose.Unknown
+        pose_class = pose_classifier.run(pose)
+        human = Human(object, pose, pose_class, cropped_image)
 
-        # test1.jpg 같은 경우 뒷 모습이라 그런가 pose-estimation 이 안먹음
-        for human in humans:
-            human_pose = pose_classifier.run(human)
-            print(human_pose)
-            recommendation_text_list.append(pose_guider.run(cropped_image, human, human_pose, image, roi))
-
+        pose_guide = pose_guider.run(human, image)
+        if pose_guide:
+            recommendation_text_list.append(pose_guide)
 
     left_side = int(image_w / 3)
     right_side = int(image_w / 3 * 2)
     middle_side = int(image_w / 2)
 
-    left_diff = int(np.abs(left_side - center_point[0]))
-    right_diff = int(np.abs(right_side - center_point[0]))
-    middle_diff = int(np.abs(middle_side - center_point[0]))
+    left_diff = int(np.abs(left_side - object.center_point[0]))
+    right_diff = int(np.abs(right_side - object.center_point[0]))
+    middle_diff = int(np.abs(middle_side - object.center_point[0]))
 
     if left_diff < right_diff:
         if left_diff < middle_diff:
             # 왼쪽에 치우친 경우
             if left_diff > error:
-                recommendation_text_list.append(("삼분할법을 지키세요", (left_side, center_point[1])))
+                recommendation_text_list.append(("삼분할법을 지키세요", (left_side, object.center_point[1])))
         else:
             # 중앙에 있는 경우
             if middle_diff > error:
-                recommendation_text_list.append(("좌우 대칭을 맞춰주세요", (middle_side, center_point[1])))
+                recommendation_text_list.append(("좌우 대칭을 맞춰주세요", (middle_side, object.center_point[1])))
     else:
         if right_diff < middle_diff:
             # 오른쪽에 치우친 경우
             if right_diff > error:
-                recommendation_text_list.append(("삼분할법을 지키세요", (right_side, center_point[1])))
+                recommendation_text_list.append(("삼분할법을 지키세요", (right_side, object.center_point[1])))
         else:
             # 중앙에 있는 경우
             if middle_diff > error:
-                recommendation_text_list.append(("좌우 대칭을 맞춰주세요", (middle_side, center_point[1])))
+                recommendation_text_list.append(("좌우 대칭을 맞춰주세요", (middle_side, object.center_point[1])))
 
     return recommendation_text_list
 
@@ -174,3 +171,7 @@ def recommend_line_position(line):
         recommendation_message_list.append("수직을 맞춰주세요")
 
     return recommendation_message_list
+
+
+def get_guide_message_for_object_line(objects, lines):
+    pass
