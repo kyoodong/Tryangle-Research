@@ -134,7 +134,9 @@ class PoseGuider:
             # 사람이 사진 밑쪽에 위치한 경우
             if human.roi[2] + gamma > height:
                 # 발목이 잘린 경우
-                if human.pose[Human.BODY_PARTS["LAnkle"]] is None or human.pose[Human.BODY_PARTS["RAnkle"]] is None:
+                if human.pose[Human.BODY_PARTS["LAnkle"]] is None and human.pose[Human.BODY_PARTS["RAnkle"]] is None\
+                        and human.pose[Human.BODY_PARTS["LBigToe"]] is None and human.pose[Human.BODY_PARTS["LSmallToe"]] is None\
+                        and human.pose[Human.BODY_PARTS["RBigToe"]] is None and human.pose[Human.BODY_PARTS["RSmallToe"]] is None:
                     return "관절(발목)이 잘리지 않게 발끝에 맞춰 찍어보세요"
 
                 # 무릎이 잘린 경우
