@@ -136,6 +136,7 @@ while True:
 
     for index, center_point in enumerate(center_points):
         if center_point:
+            # roi 를 살짝 넓직하게 잡아야 사람 포즈 인식이 잘됨
             roi = r['rois'][index]
             d = 30
             roi[0] -= d

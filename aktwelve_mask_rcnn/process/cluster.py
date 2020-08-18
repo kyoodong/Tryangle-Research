@@ -8,12 +8,27 @@ class Direction(Enum):
 
 
 class Cluster:
-    def __init__(self, point1, point2, direction):
+    def __init__(self, point1, point2, direction, image):
         self.direction = direction
         self.item_list = list()
         self.item_list.append((point1, point2))
         self.gamma = 64
         self.gradient_gamma = 0
+        self.score = 0
+        self.image = image
+
+    def get_score(self):
+        x1, x2 = self.get_mean_x()
+        y1, y2 = self.get_mean_y()
+        length = np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+        center_point = (self.image.shape[1] // 2, self.image.shape[0] // 2)
+        line_p1 = np.array([x1, y1])
+        line_p2 = np.array([x2, y2])
+        distance = np.linalg.norm(np.cross(line_p2 - line_p1, line_p1 - center_point)) / np.linalg.norm(
+            line_p2 - line_p1)
+
+        return len(self.item_list) * 50 + length + \
+               np.clip((np.maximum(self.image.shape[0], self.image.shape[1]) - distance), 0, 300)
 
     def append(self, point1, point2):
         self.item_list.append((point1, point2))
