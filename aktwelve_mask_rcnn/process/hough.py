@@ -61,7 +61,22 @@ def find_hough_line(image):
             if not is_process:
                 clusters.append(Cluster(point1, point2, Direction.VERTICAL))
 
-    clusters.sort(key=lambda object: len(object.item_list), reverse=True)
+    def sort_rule(cluster):
+        x1, x2 = cluster.get_mean_x()
+        y1, y2 = cluster.get_mean_y()
+        length = np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+        center_point = (image.shape[1] // 2, image.shape[0] // 2)
+        line_p1 = np.array([x1, y1])
+        line_p2 = np.array([x2, y2])
+        distance = np.linalg.norm(np.cross(line_p2 - line_p1, line_p1 - center_point)) / np.linalg.norm(
+            line_p2 - line_p1)
+
+        return len(cluster.item_list) * 50 + length +\
+            np.clip((np.maximum(image.shape[0], image.shape[1]) - distance), 0, 300)
+
+    # 길이나 위치에 따른 선의 우선순위 보정이 필요함
+    # 단순 개수만으로는 유의미한 선 검출이 어려움
+    clusters.sort(key=sort_rule, reverse=True)
 
     count = 0
     for cluster in clusters:
