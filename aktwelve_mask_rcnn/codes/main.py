@@ -113,7 +113,6 @@ while True:
     lab = cv2.merge(lab_planes)
     clahe_image = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
 
-
     dst = np.hstack([image, res, clahe_image])
     plt.imshow(dst)
     plt.show()
@@ -137,11 +136,26 @@ while True:
 
     for index, center_point in enumerate(center_points):
         if center_point:
-            obj = Object(r['rois'][index], r['masks'][index], r['class_ids'][index], r['scores'][index],
+            roi = r['rois'][index]
+            d = 30
+            roi[0] -= d
+            roi[1] -= d
+            roi[2] += d
+            roi[3] += d
+
+            height, width = image.shape[0], image.shape[1]
+            roi[0] = np.clip(roi[0], 0, width)
+            roi[1] = np.clip(roi[1], 0, height)
+            roi[2] = np.clip(roi[2], 0, width)
+            roi[3] = np.clip(roi[3], 0, height)
+            obj = Object(roi, r['masks'][index], r['class_ids'][index], r['scores'][index],
                          center_point)
             if obj.is_person():
                 # 사진 내 여러 사람이 있을 수 있으므로 해당 객체만을 오려내서 pose estimation 을 돌림
-                cropped_image = image[obj.roi[0]:obj.roi[2], obj.roi[1]:obj.roi[3]]
+                cropped_image = image[obj.roi[0]: obj.roi[2], obj.roi[1]:obj.roi[3]]
+                plt.imshow(cropped_image)
+                plt.show()
+
                 pose = cv_estimator.inference(cropped_image)
                 pose_class = pose_classifier.run(pose)
                 human = Human(obj, pose, pose_class, cropped_image)
