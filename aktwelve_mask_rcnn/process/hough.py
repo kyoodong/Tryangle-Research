@@ -16,8 +16,6 @@ def find_hough_line(image):
     gray = cv2.filter2D(gray, -1, kernel)
     kernel = np.ones((4, 4), np.uint8)
     erode = cv2.erode(gray, kernel, iterations=1)
-    plt.imshow(erode, 'gray')
-    plt.show()
 
     # 선 추출
     canny = cv2.Canny(erode, 2500, 1500, apertureSize=5, L2gradient=True)
