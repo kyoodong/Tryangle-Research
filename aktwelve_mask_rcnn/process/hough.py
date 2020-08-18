@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from process.cluster import Cluster, Direction
+from skimage import feature
 
 
 def find_hough_line(image):
@@ -18,8 +19,15 @@ def find_hough_line(image):
     erode = cv2.erode(gray, kernel, iterations=1)
 
     # 선 추출
-    canny = cv2.Canny(erode, 2500, 1500, apertureSize=5, L2gradient=True)
-    lines = cv2.HoughLinesP(canny, 1, np.pi / 360, 100, minLineLength=200, maxLineGap=200)
+    skicanny = feature.canny(erode, sigma=3)
+    skicanny = np.array(skicanny, dtype=np.uint8) * 255
+    # canny = cv2.Canny(erode, 2500, 1500, apertureSize=5, L2gradient=True)
+
+    # d = np.hstack([skicanny, canny])
+    # plt.imshow(d, cmap='gray')
+    # plt.show()
+
+    lines = cv2.HoughLinesP(skicanny, 1, np.pi / 360, 100, minLineLength=200, maxLineGap=200)
 
     if lines is None:
         return None
