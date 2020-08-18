@@ -19,8 +19,8 @@ class HumanPose(Enum):
 class CVPoseEstimator:
     def __init__(self):
         dirname = os.path.dirname(os.path.abspath(__file__))
-        self.net = cv2.dnn.readNetFromCaffe("{}/pose/mpi/pose_deploy_linevec_faster_4_stages.prototxt".format(dirname),
-                                       "{}/pose/mpi/pose_iter_160000.caffemodel".format(dirname))
+        self.net = cv2.dnn.readNetFromCaffe("{}/pose/body_25/pose_deploy.prototxt".format(dirname),
+                                       "{}/pose/body_25/pose_iter_584000.caffemodel".format(dirname))
 
         self.threshold = 0.4
 
