@@ -6,11 +6,18 @@ from process.cluster import Cluster, Direction
 
 def find_hough_line(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
     # 무의미한 선들을 없애기 위한 작업들
-    blur = cv2.GaussianBlur(gray, (3, 3), 0)
+    kernel = np.array([
+        [0, -1, 0],
+        [-1, 5, -1],
+        [0, -1, 0]
+    ])
+    # blur = cv2.GaussianBlur(gray, (3, 3), 0)
+    gray = cv2.filter2D(gray, -1, kernel)
     kernel = np.ones((4, 4), np.uint8)
-    erode = cv2.erode(blur, kernel, iterations=1)
+    erode = cv2.erode(gray, kernel, iterations=1)
+    plt.imshow(erode, 'gray')
+    plt.show()
 
     # 선 추출
     canny = cv2.Canny(erode, 2500, 1500, apertureSize=5, L2gradient=True)
