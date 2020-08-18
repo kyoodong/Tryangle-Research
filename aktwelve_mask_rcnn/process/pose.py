@@ -1,7 +1,6 @@
 import cv2
 import matplotlib.pyplot as plt
 import os
-from tf_pose import common
 from enum import Enum
 from process.object import Human
 import numpy as np
@@ -69,42 +68,6 @@ class CVPoseEstimator:
 class PoseClassifier:
     def run(self, human):
         pass
-
-
-class TfPoseClassifier(PoseClassifier):
-    def run(self, human):
-        left_ankle = -1
-        right_ankle = -1
-        left_hip = -1
-        right_hip = -1
-        left_knee = -1
-        right_knee = -1
-        gamma = 0.05
-
-        if common.CocoPart.LAnkle.value in human.body_parts.keys():
-            left_ankle = human.body_parts[common.CocoPart.LAnkle.value].y
-
-        if common.CocoPart.RAnkle.value in human.body_parts.keys():
-            right_ankle = human.body_parts[common.CocoPart.RAnkle.value].y
-
-        if common.CocoPart.LHip.value in human.body_parts.keys():
-            left_hip = human.body_parts[common.CocoPart.LHip.value].y
-
-        if common.CocoPart.RHip.value in human.body_parts.keys():
-            right_hip = human.body_parts[common.CocoPart.RHip.value].y
-
-        if common.CocoPart.LKnee.value in human.body_parts.keys():
-            left_knee = human.body_parts[common.CocoPart.LKnee.value].y
-
-        if common.CocoPart.RKnee.value in human.body_parts.keys():
-            right_knee = human.body_parts[common.CocoPart.RKnee.value].y
-
-        # 무릎의 높이가 엉덩이의 높이보다 낮은 경우, 서 있다(stand)고 판단
-        if (left_knee != -1 and left_hip != -1 and left_knee > left_hip + gamma) or \
-                (right_knee != -1 and right_hip != -1 and right_knee > right_hip + gamma):
-            return HumanPose.Stand
-
-        return HumanPose.Unknown
 
 
 class CvClassifier(PoseClassifier):

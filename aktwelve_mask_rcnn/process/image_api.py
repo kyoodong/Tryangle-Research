@@ -2,8 +2,6 @@ import numpy as np
 import cv2
 import os
 import sys
-from tf_pose.estimator import TfPoseEstimator
-from tf_pose.networks import get_graph_path, model_wh
 import matplotlib.pyplot as plt
 from process.pose import CVPoseEstimator, PoseGuider, CvClassifier, HumanPose
 from process.object import Object, Human
@@ -11,9 +9,6 @@ import numpy as np
 
 dx = [0, 1, 0, -1]
 dy = [-1, 0, 1, 0]
-
-# tf_estimator = TfPoseEstimator(get_graph_path('mobilenet_v2_large'))
-print('estimator is ready')
 
 
 # 주어진 segmentation 결과를 통해 외곽선을 알아내는 함수
@@ -165,9 +160,6 @@ def recommend_line_position(line):
 
 
 def get_guide_message_for_obj_line(objs, lines, image):
-    print(objs)
-    print(lines)
-
     guide_message_list = list()
     threshold = 10
     for obj in objs:
