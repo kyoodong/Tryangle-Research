@@ -69,6 +69,7 @@ def find_hough_line(image):
             if not is_process:
                 clusters.append(Cluster(point1, point2, Direction.VERTICAL, image))
 
+    # 클러스터 평균 line이 중앙에 가까울 수록, 그 길이가 길 수록, 클러스터에 포함된 선의 수가 많을수록 우선순위가 높아지도록 정렬
     clusters.sort(key=lambda cluster: cluster.get_score(), reverse=True)
 
     count = 0
@@ -79,7 +80,9 @@ def find_hough_line(image):
         result.append([x1, y1, x2, y2])
 
         count += 1
-        # if count == 3:
-        #     break
+
+        # 최대 3개의 유의미한 선을 추출
+        if count == 3:
+            break
 
     return result

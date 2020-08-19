@@ -82,6 +82,7 @@ class CvClassifier(PoseClassifier):
         self.left_knee = -1
         self.right_knee = -1
 
+        # pose estimation 결과 중 유의미한 정보만을 뽑아냄
         if human[Human.BODY_PARTS["LAnkle"]]:
             self.left_ankle = human[Human.BODY_PARTS["LAnkle"]][1]
 
@@ -115,6 +116,41 @@ class PoseGuider:
     def __init__(self):
         self.foot_lower_threshold = 10
 
+    def has_head(self, human):
+        if human.pose[Human.BODY_PARTS[Human.Part.LEar]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.REar]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.LEye]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.REye]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.Nose]] is not None:
+                return True
+        return False
+
+    def has_upper_body(self, human):
+        if human.pose[Human.BODY_PARTS[Human.Part.LShoulder]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.RShoulder]] is not None:
+                return True
+        return False
+
+    def has_lower_body(self, human):
+        if human.pose[Human.BODY_PARTS[Human.Part.LHip]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.RHip]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.MidHip]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.RKnee]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.LKnee]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.RAnkle]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.LAnkle]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.LHeel]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.RHeel]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.LSmallToe]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.RSmallToe]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.LBigToe]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.RBigToe]] is not None:
+                return True
+        return False
+
+    def has_body(self, human):
+        return self.has_upper_body(human) or self.has_lower_body(human)
+
     def run(self, human, image):
         height, width = image.shape[0], image.shape[1]
 
@@ -123,6 +159,7 @@ class PoseGuider:
                 center = np.array(human.pose[Human.BODY_PARTS[key]]) + np.array([human.roi[1], human.roi[0]])
                 center = tuple(center)
                 cv2.circle(image, center, 3, (255, 0, 0), thickness=3)
+                cv2.putText(image, key, center, cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 1, (0, 255, 255), 2)
 
         plt.imshow(image)
         plt.show()
@@ -142,6 +179,10 @@ class PoseGuider:
                 # 무릎이 잘린 경우
                 if human.pose[Human.BODY_PARTS["LKnee"]] is None or human.pose[Human.BODY_PARTS["RKnee"]] is None:
                     return "관절(무릎)이 잘리지 않게 허벅지에서 잘라보세요"
+
+                if self.has_head(human):
+                    if not self.has_body(human):
+                        return "관절(목)이 잘리지 않게 어깨 잘라보세요"
 
             if height > human.roi[2] + self.foot_lower_threshold:
                 return "발 끝을 사진 맨 밑에 맞추세요"

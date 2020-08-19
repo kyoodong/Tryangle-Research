@@ -12,12 +12,40 @@ class Object:
 
 
 class Human(Object):
+    class Part:
+        Nose = "Nose"
+        Neck = "Neck"
+        RShoulder = "RShoulder"
+        RElbow = "RElbow"
+        RWrist = "RWrist"
+        LShoulder = "LShoulder"
+        LElbow = "LElbow"
+        LWrist = "LWrist"
+        MidHip = "MidHip"
+        RHip = "RHip"
+        RKnee = "RKnee"
+        RAnkle = "RAnkle"
+        LHip = "LHip"
+        LKnee = "LKnee"
+        LAnkle = "LAnkle"
+        REye = "REye"
+        LEye = "LEye"
+        REar = "REar"
+        LEar = "LEar"
+        LBigToe = "LBigToe"
+        LSmallToe = "LSmallToe"
+        LHeel = "LHeel"
+        RBigToe = "RBigToe"
+        RSmallToe = "RSmallToe"
+        RHeel = "RHeel"
+        Background = "Background"
+
     BODY_PARTS = {"Nose": 0, "Neck": 1, "RShoulder": 2, "RElbow": 3, "RWrist": 4,
                   "LShoulder": 5, "LElbow": 6, "LWrist": 7, "MidHip": 8, "RHip": 9,
                   "RKnee": 10, "RAnkle": 11, "LHip": 12, "LKnee": 13, "LAnkle": 14,
                   "REye": 15, "LEye": 16, "REar": 17, "LEar": 18, "LBigToe": 19,
                   "LSmallToe": 20, "LHeel": 21, "RBigToe": 22, "RSmallToe": 23,
-                  "RHeel": 24, "Background": 25}
+                  "RHeel": 24}
 
     POSE_PAIRS = [["Head", "Neck"], ["Neck", "RShoulder"], ["RShoulder", "RElbow"],
                   ["RElbow", "RWrist"], ["Neck", "LShoulder"], ["LShoulder", "LElbow"],
