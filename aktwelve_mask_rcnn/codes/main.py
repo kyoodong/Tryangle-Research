@@ -51,7 +51,10 @@ config.display()
 model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config=config)
 
 # Load weights trained on MS-COCO
-model.load_weights(COCO_MODEL_PATH, by_name=True)
+# model.load_weights(COCO_MODEL_PATH, by_name=True)
+
+# Load weights trained on MS-COCO
+model.load_weights(model.find_last(), by_name=True)
 
 # # Load COCO dataset
 # dataset = coco.CocoDataset()
