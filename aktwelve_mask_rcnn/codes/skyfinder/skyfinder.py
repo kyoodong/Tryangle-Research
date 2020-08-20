@@ -40,11 +40,11 @@ class ADE20KConfig(Config):
     IMAGES_PER_GPU = 1
 
     # Number of classes (including background)
-    NUM_CLASSES = 2722
+    NUM_CLASSES = 81 + 1
 
     # All of our training images are 512x512
-    IMAGE_MIN_DIM = 512
-    IMAGE_MAX_DIM = 512
+    # IMAGE_MIN_DIM = 512
+    # IMAGE_MAX_DIM = 512
 
     # You can experiment with this number to see if it improves training
     STEPS_PER_EPOCH = 500
@@ -116,21 +116,21 @@ class ADE20KDataset(utils.Dataset):
                     image_file_name = image['file_name']
                     image_width = image['width']
                     image_height = image['height']
+
+                    image_path = os.path.abspath(os.path.join(images_dir, image_file_name))
+                    image_annotations = annotations[image_id]
+
+                    # Add the image using the base method from utils.Dataset
+                    self.add_image(
+                        source=source_name,
+                        image_id=image_id,
+                        path=image_path,
+                        width=image_width,
+                        height=image_height,
+                        annotations=image_annotations
+                    )
                 except KeyError as key:
                     print("Warning: Skipping image (id: {}) with missing key: {}".format(image_id, key))
-
-                image_path = os.path.abspath(os.path.join(images_dir, image_file_name))
-                image_annotations = annotations[image_id]
-
-                # Add the image using the base method from utils.Dataset
-                self.add_image(
-                    source=source_name,
-                    image_id=image_id,
-                    path=image_path,
-                    width=image_width,
-                    height=image_height,
-                    annotations=image_annotations
-                )
 
     def load_mask(self, image_id):
         """ Load instance masks for the given image.
@@ -164,7 +164,7 @@ class ADE20KDataset(utils.Dataset):
 
 
 dataset_train = ADE20KDataset()
-dataset_train.load_data('datasets/annotations/train.json', 'datasets/train')
+dataset_train.load_data('datasets/annotation.json', 'datasets/images')
 dataset_train.prepare()
 
 dataset_val = ADE20KDataset()
@@ -172,7 +172,7 @@ dataset_val.load_data('datasets/annotations/val.json', 'datasets/val')
 dataset_val.prepare()
 
 dataset = dataset_train
-image_ids = np.random.choice(dataset.image_ids, 4)
+image_ids = [0]
 for image_id in image_ids:
     image = dataset.load_image(image_id)
     mask, class_ids = dataset.load_mask(image_id)
