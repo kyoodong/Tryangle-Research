@@ -551,3 +551,4 @@ akwelv_mask_rcnn/ENV/
 *.caffemodel
 
 **/datasets/**
+DataFormatConverter/*.json
