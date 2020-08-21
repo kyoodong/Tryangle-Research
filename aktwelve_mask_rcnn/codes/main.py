@@ -43,6 +43,7 @@ class InferenceConfig(coco.CocoConfig):
     # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
     GPU_COUNT = 1
     IMAGES_PER_GPU = 1
+    NUM_CLASSES = 1 + 80  # COCO has 80 classes + sky
 
 config = InferenceConfig()
 config.display()
