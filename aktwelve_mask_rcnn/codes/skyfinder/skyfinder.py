@@ -164,7 +164,7 @@ class ADE20KDataset(utils.Dataset):
 
 
 dataset_train = ADE20KDataset()
-dataset_train.load_data('datasets/annotation.json', 'datasets/images')
+dataset_train.load_data('datasets/instances_train2017.json', 'datasets/images')
 dataset_train.prepare()
 
 dataset_val = ADE20KDataset()
