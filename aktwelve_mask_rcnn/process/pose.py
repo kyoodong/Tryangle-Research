@@ -157,7 +157,7 @@ class PoseGuider:
 
         for key in Human.BODY_PARTS.keys():
             if human.pose[Human.BODY_PARTS[key]] is not None:
-                center = np.array(human.pose[Human.BODY_PARTS[key]]) + np.array([human.roi[1], human.roi[0]])
+                center = np.array(human.pose[Human.BODY_PARTS[key]]) + np.array([human.extended_roi[1], human.extended_roi[0]])
                 center = tuple(center)
                 cv2.circle(image, center, 3, (255, 0, 0), thickness=3)
                 cv2.putText(image, key, center, cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 1, (0, 255, 255), 2)
