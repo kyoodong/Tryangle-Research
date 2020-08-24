@@ -52,8 +52,9 @@ class Human(Object):
                   ["LElbow", "LWrist"], ["Neck", "Chest"], ["Chest", "RHip"], ["RHip", "RKnee"],
                   ["RKnee", "RAnkle"], ["Chest", "LHip"], ["LHip", "LKnee"], ["LKnee", "LAnkle"]]
 
-    def __init__(self, obj, pose, pose_class, cropped_image):
+    def __init__(self, obj, pose, pose_class, cropped_image, extended_roi):
         super(Human, self).__init__(obj.roi, obj.mask, obj.clazz, obj.score, obj.center_point)
         self.pose = pose
         self.pose_class = pose_class
         self.cropped_image = cropped_image
+        self.extended_roi = extended_roi
