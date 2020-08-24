@@ -36,8 +36,6 @@ if not os.path.exists(COCO_MODEL_PATH):
 # Directory of images to run detection on
 IMAGE_DIR = os.path.join(ROOT_DIR, "images")
 
-#%%
-
 class InferenceConfig(coco.CocoConfig):
     # Set batch size to 1 since we'll be running inference on
     # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
@@ -52,10 +50,10 @@ config.display()
 model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config=config)
 
 # Load weights trained on MS-COCO
-# model.load_weights(COCO_MODEL_PATH, by_name=True)
+model.load_weights(COCO_MODEL_PATH, by_name=True)
 
-# Load weights trained on MS-COCO
-model.load_weights(model.find_last(), by_name=True)
+# Last
+# model.load_weights(model.find_last(), by_name=True)
 
 # # Load COCO dataset
 # dataset = coco.CocoDataset()
