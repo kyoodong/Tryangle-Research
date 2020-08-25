@@ -172,27 +172,36 @@ class PoseGuider:
             # 사람이 사진 밑쪽에 위치한 경우
             if human.roi[2] + gamma > height:
                 # 발목이 잘린 경우
+                # 무릎은 있으나 발목, 발꿈치 등이 모두 없는 경우
                 if human.pose[Human.BODY_PARTS["LAnkle"]] is None and human.pose[Human.BODY_PARTS["RAnkle"]] is None\
                         and human.pose[Human.BODY_PARTS["LBigToe"]] is None and human.pose[Human.BODY_PARTS["LSmallToe"]] is None\
-                        and human.pose[Human.BODY_PARTS["RBigToe"]] is None and human.pose[Human.BODY_PARTS["RSmallToe"]] is None:
-                    guide_message_list.append("관절(발목)이 잘리지 않게 발끝에 맞춰 찍어보세요")
+                        and human.pose[Human.BODY_PARTS["RBigToe"]] is None and human.pose[Human.BODY_PARTS["RSmallToe"]] is None\
+                        and human.pose[Human.BODY_PARTS["LKnee"]] is not None and human.pose[Human.BODY_PARTS["RKnee"]] is not None:
+                    human_height = human[2] - human[0]
+                    diff = -human_height * 10 / 170
+                    guide_message_list.append(("발목이 잘리지 않게 발끝에 맞춰 찍어보세요", (diff, 0)))
 
                 # 무릎이 잘린 경우
                 if human.pose[Human.BODY_PARTS["LKnee"]] is None or human.pose[Human.BODY_PARTS["RKnee"]] is None:
-                    guide_message_list.append("관절(무릎)이 잘리지 않게 허벅지에서 잘라보세요")
+                    human_height = human[2] - human[0]
+                    diff = human_height * 20 / 170
+                    guide_message_list.append(("무릎이 잘리지 않게 허벅지까지만 찍어보세요", (diff, 0)))
 
                 if self.has_head(human):
                     if not self.has_body(human):
-                        guide_message_list.append("관절(목)이 잘리지 않게 어깨 잘라보세요")
+                        human_height = human[2] - human[0]
+                        diff = -human_height * 20 / 170
+                        guide_message_list.append(("관절(목)이 잘리지 않게 어깨까지 찍어보세요", (diff, 0)))
 
             if height > human.roi[2] + self.foot_lower_threshold:
-                guide_message_list.append("발 끝을 사진 맨 밑에 맞추세요")
+                guide_message_list.append(("발 끝을 사진 맨 밑에 맞추세요", (height - human.roi[2] + self.foot_lower_threshold, 0)))
 
             # 사람이 사진의 윗쪽에 위치한 경우
             if human.roi[0] < gamma:
                 # 머리가 있다면
                 if self.has_head(human):
-                    guide_message_list.append("머리 위에는 여백이 있는것이 좋습니다")
-
+                    top = height // 3
+                    diff = top - human.roi[0]
+                    guide_message_list.append(("머리 위에는 여백이 있는 것이 좋습니다", (diff, 0)))
 
         return guide_message_list
