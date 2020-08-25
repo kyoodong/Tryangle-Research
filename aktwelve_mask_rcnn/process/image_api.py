@@ -155,29 +155,26 @@ def get_obj_position_guides(obj, image):
     golden_ratio_area_list = get_golden_ratio_area(image_h, image_w)
 
     for golden_ratio_area in golden_ratio_area_list:
-        print("iou", get_iou(golden_ratio_area, obj.roi))
         cv2.rectangle(image, (golden_ratio_area[0], golden_ratio_area[1]), (golden_ratio_area[2], golden_ratio_area[3]), (255, 0, 0))
-    plt.imshow(image)
-    plt.show()
 
     if left_diff < right_diff:
         if left_diff < middle_diff:
             # 왼쪽에 치우친 경우
             if left_diff > error:
-                guide_message_list.append(("피사체가 황금비율 영역에 있어야 좋습니다.", (0, left_side - obj.center_point[1])))
+                guide_message_list.append(("피사체가 황금비율 영역에 있어야 좋습니다.", (0, left_side - obj.center_point[0])))
         else:
             # 중앙에 있는 경우
             if middle_diff > error:
-                guide_message_list.append(("피사체를 정중앙에 두어 좌우 대칭을 맞춰보세요", (0, middle_side - obj.center_point[1])))
+                guide_message_list.append(("피사체를 정중앙에 두어 좌우 대칭을 맞춰보세요", (0, middle_side - obj.center_point[0])))
     else:
         if right_diff < middle_diff:
             # 오른쪽에 치우친 경우
             if right_diff > error:
-                guide_message_list.append(("피사체가 황금비율 영역에 있어야 좋습니다.", (0, right_side - obj.center_point[1])))
+                guide_message_list.append(("피사체가 황금비율 영역에 있어야 좋습니다.", (0, right_side - obj.center_point[0])))
         else:
             # 중앙에 있는 경우
             if middle_diff > error:
-                guide_message_list.append(("피사체를 정중앙에 두어 좌우 대칭을 맞춰보세요", (0, middle_side - obj.center_point[1])))
+                guide_message_list.append(("피사체를 정중앙에 두어 좌우 대칭을 맞춰보세요", (0, middle_side - obj.center_point[0])))
 
     return guide_message_list
 
