@@ -554,3 +554,4 @@ akwelv_mask_rcnn/ENV/
 DataFormatConverter/*.json
 
 aktwelve_mask_rcnn/logs/
+aktwelve_mask_rcnn/codes/coco/dataset/
