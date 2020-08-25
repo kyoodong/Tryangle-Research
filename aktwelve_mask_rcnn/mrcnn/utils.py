@@ -305,7 +305,12 @@ class Dataset(object):
         # Build (or rebuild) everything else from the info dicts.
         self.num_classes = len(self.class_info)
         self.class_ids = np.arange(self.num_classes)
-        self.class_names = [clean_name(c["name"]) for c in self.class_info]
+        self.class_names = dict()
+        for c in self.class_info:
+            if "id" in c:
+                self.class_names[c["id"]] = clean_name(c["name"])
+
+        # self.class_names = [ for c in self.class_info]
         self.num_images = len(self.image_info)
         self._image_ids = np.arange(self.num_images)
 
@@ -893,6 +898,9 @@ def resize(image, output_shape, order=1, mode='constant', cval=0, clip=True,
     of skimage. This solves the problem by using different parameters per
     version. And it provides a central place to control resizing defaults.
     """
+    if image.dtype == bool:
+        order = 0
+
     if LooseVersion(skimage.__version__) >= LooseVersion("0.14"):
         # New in 0.14: anti_aliasing. Default it to False for backward
         # compatibility with skimage 0.13.

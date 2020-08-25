@@ -32,6 +32,8 @@ import sys
 import time
 import numpy as np
 import imgaug  # https://github.com/aleju/imgaug (pip3 install imgaug)
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 # Download and install the Python COCO tools from https://github.com/waleedka/coco
 # That's a fork from the original https://github.com/pdollar/coco with a bug
@@ -61,7 +63,7 @@ COCO_MODEL_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
 # Directory to save logs and model checkpoints, if not provided
 # through the command line argument --logs
 DEFAULT_LOGS_DIR = os.path.join(ROOT_DIR, "logs")
-DEFAULT_DATASET_YEAR = "2014"
+DEFAULT_DATASET_YEAR = "2017"
 
 ############################################################
 #  Configurations
@@ -78,13 +80,15 @@ class CocoConfig(Config):
 
     # We use a GPU with 12GB memory, which can fit two images.
     # Adjust down if you use a smaller GPU.
-    IMAGES_PER_GPU = 2
+    IMAGES_PER_GPU = 1
 
     # Uncomment to train on 8 GPUs (default is 1)
     # GPU_COUNT = 8
 
     # Number of classes (including background)
-    NUM_CLASSES = 1 + 80  # COCO has 80 classes
+    NUM_CLASSES = 1 + 83  # COCO has 80 classes + sky + sea + ground
+
+    STEPS_PER_EPOCH = 2000
 
 
 ############################################################
@@ -471,7 +475,8 @@ if __name__ == '__main__':
 
     # Load weights
     print("Loading weights ", model_path)
-    model.load_weights(model_path, by_name=True)
+    model.load_weights(model_path, by_name=True, exclude=["mrcnn_class_logits", "mrcnn_bbox_fc",
+                                "mrcnn_bbox", "mrcnn_mask"])
 
     # Train or evaluate
     if args.command == "train":
@@ -483,6 +488,16 @@ if __name__ == '__main__':
             dataset_train.load_coco(args.dataset, "valminusminival", year=args.year, auto_download=args.download)
         dataset_train.prepare()
 
+        # dataset = dataset_train
+        # image_ids = [i for i in range(201, 300)]
+        # for image_id in image_ids:
+        #     try:
+        #         image = dataset.load_image(image_id)
+        #         mask, class_ids = dataset.load_mask(image_id)
+        #         visualize.display_top_masks(image, mask, class_ids, dataset.class_names)
+        #     except:
+        #         print("dd")
+
         # Validation dataset
         dataset_val = CocoDataset()
         val_type = "val" if args.year in '2017' else "minival"
@@ -491,7 +506,12 @@ if __name__ == '__main__':
 
         # Image Augmentation
         # Right/Left flip 50% of the time
-        augmentation = imgaug.augmenters.Fliplr(0.5)
+        augmentation = imgaug.augmenters.Sometimes(0.5, [
+            imgaug.augmenters.Fliplr(0.5),
+            imgaug.augmenters.GaussianBlur(sigma=(0.0, 5.0)),
+            imgaug.augmenters.TranslateX(),
+            imgaug.augmenters.TranslateY()
+        ])
 
         # *** This training schedule is an example. Update to your needs ***
 
@@ -528,6 +548,7 @@ if __name__ == '__main__':
         coco = dataset_val.load_coco(args.dataset, val_type, year=args.year, return_coco=True, auto_download=args.download)
         dataset_val.prepare()
         print("Running COCO evaluation on {} images.".format(args.limit))
+
         evaluate_coco(model, dataset_val, coco, "bbox", limit=int(args.limit))
     else:
         print("'{}' is not recognized. "

@@ -2,17 +2,13 @@ import numpy as np
 import cv2
 import os
 import sys
-from tf_pose.estimator import TfPoseEstimator
-from tf_pose.networks import get_graph_path, model_wh
 import matplotlib.pyplot as plt
 from process.pose import CVPoseEstimator, PoseGuider, CvClassifier, HumanPose
+from process.object import Object, Human
+import numpy as np
 
 dx = [0, 1, 0, -1]
 dy = [-1, 0, 1, 0]
-
-# tf_estimator = TfPoseEstimator(get_graph_path('mobilenet_v2_large'))
-cv_estimator = CVPoseEstimator()
-print('estimator is ready')
 
 
 # 주어진 segmentation 결과를 통해 외곽선을 알아내는 함수
@@ -98,64 +94,102 @@ def get_contour_center_point(image, threshold):
     return layered_image, cogs
 
 
-def recommend_object_position(center_point, image, roi, is_person=False):
+def get_golden_ratio_area(image_height, image_width):
+    unit_x = image_width // 8
+    unit_y = image_height // 8
+
+    area_list = list()
+
+    # 좌상단
+    area_list.append((unit_y * 2, unit_x * 2, unit_y * 3, unit_x * 3))
+
+    # 우상단
+    area_list.append((unit_y * 2, unit_x * 5, unit_y * 3, unit_x * 6))
+
+    # 좌하단
+    area_list.append((unit_y * 5, unit_x * 2, unit_y * 6, unit_x * 3))
+
+    # 우하단
+    area_list.append((unit_y * 5, unit_x * 5, unit_y * 6, unit_x * 6))
+
+    # 정중앙
+    area_list.append((unit_y * 3, unit_x * 3, unit_y * 5, unit_x * 5))
+    return area_list
+
+
+def get_iou(rect1, rect2):
+    rect1_width = rect1[3] - rect1[1]
+    rect1_height = rect1[2] - rect1[0]
+    rect1_area = rect1_width * rect1_height
+    intersection_left = max(rect1[1], rect2[1])
+    intersection_right = min(rect1[3], rect2[3])
+    intersection_top = max(rect1[0], rect2[0])
+    intersection_bottom = min(rect1[2], rect2[2])
+    intersection_width = intersection_right - intersection_left
+    intersection_height = intersection_bottom - intersection_top
+    intersection_area = max(intersection_width * intersection_height, 0)
+    if intersection_width < 0 or intersection_height < 0:
+        intersection_area = 0
+    return intersection_area / rect1_area
+
+
+def get_obj_position_guides(obj, image):
     image_h, image_w = image.shape[:2]
     error = image_w // 100
-    recommendation_text_list = list()
+    guide_message_list = list()
 
-    if is_person:
-        # 사진 내 여러 사람이 있을 수 있으므로 해당 객체만을 오려내서 pose estimation 을 돌림
-        cropped_image = image[roi[0]:roi[2], roi[1]:roi[3]]
-
-        # humans = tf_estimator.inference(cropped_image, upsample_size=4.0)
-        humans = [cv_estimator.inference(cropped_image)]
-
-        print(humans)
-        pose_classifier = CvClassifier()
+    if obj.is_person():
         pose_guider = PoseGuider()
-        human_pose = HumanPose.Unknown
-
-        # test1.jpg 같은 경우 뒷 모습이라 그런가 pose-estimation 이 안먹음
-        for human in humans:
-            human_pose = pose_classifier.run(human)
-            print(human_pose)
-            recommendation_text_list.append(pose_guider.run(cropped_image, human, human_pose, image, roi))
-
+        pose_guide = pose_guider.run(obj, image)
+        if pose_guide:
+            guide_message_list.extend(pose_guide)
 
     left_side = int(image_w / 3)
     right_side = int(image_w / 3 * 2)
     middle_side = int(image_w / 2)
 
-    left_diff = int(np.abs(left_side - center_point[0]))
-    right_diff = int(np.abs(right_side - center_point[0]))
-    middle_diff = int(np.abs(middle_side - center_point[0]))
+    left_diff = int(np.abs(left_side - obj.center_point[0]))
+    right_diff = int(np.abs(right_side - obj.center_point[0]))
+    middle_diff = int(np.abs(middle_side - obj.center_point[0]))
+
+    golden_ratio_area_list = get_golden_ratio_area(image_h, image_w)
+
+    # for golden_ratio_area in golden_ratio_area_list:
+    #     cv2.rectangle(image, (golden_ratio_area[0], golden_ratio_area[1]), (golden_ratio_area[2], golden_ratio_area[3]), (255, 0, 0))
 
     if left_diff < right_diff:
         if left_diff < middle_diff:
             # 왼쪽에 치우친 경우
             if left_diff > error:
-                recommendation_text_list.append(("삼분할법을 지키세요", (left_side, center_point[1])))
+                guide_message_list.append(("피사체가 황금비율 영역에 있어야 좋습니다.", (0, left_side - obj.center_point[0])))
         else:
             # 중앙에 있는 경우
             if middle_diff > error:
-                recommendation_text_list.append(("좌우 대칭을 맞춰주세요", (middle_side, center_point[1])))
+                guide_message_list.append(("피사체를 정중앙에 두어 좌우 대칭을 맞춰보세요", (0, middle_side - obj.center_point[0])))
     else:
         if right_diff < middle_diff:
             # 오른쪽에 치우친 경우
             if right_diff > error:
-                recommendation_text_list.append(("삼분할법을 지키세요", (right_side, center_point[1])))
+                guide_message_list.append(("피사체가 황금비율 영역에 있어야 좋습니다.", (0, right_side - obj.center_point[0])))
         else:
             # 중앙에 있는 경우
             if middle_diff > error:
-                recommendation_text_list.append(("좌우 대칭을 맞춰주세요", (middle_side, center_point[1])))
+                guide_message_list.append(("피사체를 정중앙에 두어 좌우 대칭을 맞춰보세요", (0, middle_side - obj.center_point[0])))
 
-    return recommendation_text_list
+    return guide_message_list
 
 
-def recommend_line_position(line):
+def shift_image(image, x, y):
+    height, width = image.shape[:2]
+    M = np.float32([[1, 0, x], [0, 1, y]])
+    dst = cv2.warpAffine(np.float32(image), M, (width, height))
+    return dst
+
+
+def get_line_position_guides(line):
     upper_threshold = 25
     lower_threshold = 5
-    recommendation_message_list = list()
+    guide_message_list = list()
 
     x1 = line[0]
     y1 = line[1]
@@ -167,10 +201,33 @@ def recommend_line_position(line):
 
     # 수평선 양 끝 점의 차이가 lower_threshold 초과이면 가이드 멘트
     if upper_threshold > ydiff > lower_threshold:
-        recommendation_message_list.append("수평을 맞춰주세요")
+        guide_message_list.append("수평을 맞춰주세요")
 
     # 수직선
     elif upper_threshold > xdiff > lower_threshold:
-        recommendation_message_list.append("수직을 맞춰주세요")
+        guide_message_list.append("수직을 맞춰주세요")
 
-    return recommendation_message_list
+    return guide_message_list
+
+
+def get_obj_line_guides(objs, lines, image):
+    guide_message_list = list()
+    threshold = 10
+    for obj in objs:
+        if obj.is_person():
+            joint_list = [("Neck", "목", "어깨")]
+
+            # 선이 관절을 지나는지 검사
+            for joint in joint_list:
+                if obj.pose[Human.BODY_PARTS[joint[0]]]:
+                    for line in lines:
+                        neck = np.array([obj.pose[Human.BODY_PARTS[joint[0]]][0] + obj.roi[1],
+                                         obj.pose[Human.BODY_PARTS[joint[0]]][1] + obj.roi[0]])
+
+                        line_p1 = np.array([line[0], line[1]])
+                        line_p2 = np.array([line[2], line[3]])
+                        distance = np.linalg.norm(np.cross(line_p2 - line_p1, line_p1 - neck)) / np.linalg.norm(
+                            line_p2 - line_p1)
+                        if distance < threshold:
+                            guide_message_list.append("선이 {}을 지나는 것은 좋지 않습니다. {}를 지나게 해보세요".format(joint[1], joint[2]))
+    return guide_message_list

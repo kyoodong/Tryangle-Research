@@ -1,8 +1,9 @@
 import cv2
 import matplotlib.pyplot as plt
 import os
-from tf_pose import common
 from enum import Enum
+from process.object import Human
+import numpy as np
 
 
 class HumanPose(Enum):
@@ -14,22 +15,12 @@ class HumanPose(Enum):
 # caffemodel 파일 다운로드
 # wget -c http://posefs1.perception.cs.cmu.edu/OpenPose/models/pose/mpi/pose_iter_160000.caffemodel -P pose
 
-BODY_PARTS = {"Head": 0, "Neck": 1, "RShoulder": 2, "RElbow": 3, "RWrist": 4,
-                   "LShoulder": 5, "LElbow": 6, "LWrist": 7, "RHip": 8, "RKnee": 9,
-                   "RAnkle": 10, "LHip": 11, "LKnee": 12, "LAnkle": 13, "Chest": 14,
-                   "Background": 15}
-
-POSE_PAIRS = [["Head", "Neck"], ["Neck", "RShoulder"], ["RShoulder", "RElbow"],
-                   ["RElbow", "RWrist"], ["Neck", "LShoulder"], ["LShoulder", "LElbow"],
-                   ["LElbow", "LWrist"], ["Neck", "Chest"], ["Chest", "RHip"], ["RHip", "RKnee"],
-                   ["RKnee", "RAnkle"], ["Chest", "LHip"], ["LHip", "LKnee"], ["LKnee", "LAnkle"]]
-
 
 class CVPoseEstimator:
     def __init__(self):
         dirname = os.path.dirname(os.path.abspath(__file__))
-        self.net = cv2.dnn.readNetFromCaffe("{}/pose/mpi/pose_deploy_linevec_faster_4_stages.prototxt".format(dirname),
-                                       "{}/pose/mpi/pose_iter_160000.caffemodel".format(dirname))
+        self.net = cv2.dnn.readNetFromCaffe("{}/pose/body_25/pose_deploy.prototxt".format(dirname),
+                                       "{}/pose/body_25/pose_iter_584000.caffemodel".format(dirname))
 
         self.threshold = 0.4
 
@@ -41,7 +32,7 @@ class CVPoseEstimator:
         out = self.net.forward()
         points = list()
 
-        for i in range(len(BODY_PARTS)):
+        for i in range(len(Human.BODY_PARTS)):
             # Slice heatmap of corresponging body's part.
             heatMap = out[0, i, :, :]
 
@@ -58,11 +49,11 @@ class CVPoseEstimator:
         # for pair in POSE_PAIRS:
         #     partFrom = pair[0]
         #     partTo = pair[1]
-        #     assert (partFrom in BODY_PARTS)
-        #     assert (partTo in BODY_PARTS)
+        #     assert (partFrom in Human.BODY_PARTS)
+        #     assert (partTo in Human.BODY_PARTS)
         #
-        #     idFrom = BODY_PARTS[partFrom]
-        #     idTo = BODY_PARTS[partTo]
+        #     idFrom = Human.BODY_PARTS[partFrom]
+        #     idTo = Human.BODY_PARTS[partTo]
         #     if points[idFrom] and points[idTo]:
         #         cv2.line(image, points[idFrom], points[idTo], (255, 74, 0), 3)
         #         cv2.ellipse(image, points[idFrom], (4, 4), 0, 0, 360, (255, 255, 255), cv2.FILLED)
@@ -79,42 +70,6 @@ class PoseClassifier:
         pass
 
 
-class TfPoseClassifier(PoseClassifier):
-    def run(self, human):
-        left_ankle = -1
-        right_ankle = -1
-        left_hip = -1
-        right_hip = -1
-        left_knee = -1
-        right_knee = -1
-        gamma = 0.05
-
-        if common.CocoPart.LAnkle.value in human.body_parts.keys():
-            left_ankle = human.body_parts[common.CocoPart.LAnkle.value].y
-
-        if common.CocoPart.RAnkle.value in human.body_parts.keys():
-            right_ankle = human.body_parts[common.CocoPart.RAnkle.value].y
-
-        if common.CocoPart.LHip.value in human.body_parts.keys():
-            left_hip = human.body_parts[common.CocoPart.LHip.value].y
-
-        if common.CocoPart.RHip.value in human.body_parts.keys():
-            right_hip = human.body_parts[common.CocoPart.RHip.value].y
-
-        if common.CocoPart.LKnee.value in human.body_parts.keys():
-            left_knee = human.body_parts[common.CocoPart.LKnee.value].y
-
-        if common.CocoPart.RKnee.value in human.body_parts.keys():
-            right_knee = human.body_parts[common.CocoPart.RKnee.value].y
-
-        # 무릎의 높이가 엉덩이의 높이보다 낮은 경우, 서 있다(stand)고 판단
-        if (left_knee != -1 and left_hip != -1 and left_knee > left_hip + gamma) or \
-                (right_knee != -1 and right_hip != -1 and right_knee > right_hip + gamma):
-            return HumanPose.Stand
-
-        return HumanPose.Unknown
-
-
 class CvClassifier(PoseClassifier):
     def __init__(self):
         self.gamma = 0.05
@@ -127,26 +82,27 @@ class CvClassifier(PoseClassifier):
         self.left_knee = -1
         self.right_knee = -1
 
-        if human[BODY_PARTS["LAnkle"]]:
-            self.left_ankle = human[BODY_PARTS["LAnkle"]][1]
+        # pose estimation 결과 중 유의미한 정보만을 뽑아냄
+        if human[Human.BODY_PARTS["LAnkle"]]:
+            self.left_ankle = human[Human.BODY_PARTS["LAnkle"]][1]
 
-        if human[BODY_PARTS["RAnkle"]]:
-            self.right_ankle = human[BODY_PARTS["RAnkle"]][1]
+        if human[Human.BODY_PARTS["RAnkle"]]:
+            self.right_ankle = human[Human.BODY_PARTS["RAnkle"]][1]
 
-        if human[BODY_PARTS["LHip"]]:
-            self.left_hip = human[BODY_PARTS["LHip"]][1]
+        if human[Human.BODY_PARTS["LHip"]]:
+            self.left_hip = human[Human.BODY_PARTS["LHip"]][1]
 
-        if human[BODY_PARTS["RHip"]]:
-            self.right_hip = human[BODY_PARTS["RHip"]][1]
+        if human[Human.BODY_PARTS["RHip"]]:
+            self.right_hip = human[Human.BODY_PARTS["RHip"]][1]
 
-        if human[BODY_PARTS["LKnee"]]:
-            self.left_knee = human[BODY_PARTS["LKnee"]][1]
+        if human[Human.BODY_PARTS["LKnee"]]:
+            self.left_knee = human[Human.BODY_PARTS["LKnee"]][1]
 
-        if human[BODY_PARTS["RKnee"]]:
-            self.right_knee = human[BODY_PARTS["RKnee"]][1]
+        if human[Human.BODY_PARTS["RKnee"]]:
+            self.right_knee = human[Human.BODY_PARTS["RKnee"]][1]
 
-    def run(self, human):
-        self.__extract(human)
+    def run(self, pose):
+        self.__extract(pose)
 
         # 무릎의 높이가 엉덩이의 높이보다 낮은 경우, 서 있다(stand)고 판단
         if (self.left_knee != -1 and self.left_hip != -1 and self.left_knee > self.left_hip + self.gamma) or \
@@ -160,16 +116,92 @@ class PoseGuider:
     def __init__(self):
         self.foot_lower_threshold = 10
 
-    def run(self, cropped_image, human, human_pose, image, roi):
+    def has_head(self, human):
+        if human.pose[Human.BODY_PARTS[Human.Part.LEar]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.REar]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.LEye]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.REye]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.Nose]] is not None:
+                return True
+        return False
+
+    def has_upper_body(self, human):
+        if human.pose[Human.BODY_PARTS[Human.Part.LShoulder]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.RShoulder]] is not None:
+                return True
+        return False
+
+    def has_lower_body(self, human):
+        if human.pose[Human.BODY_PARTS[Human.Part.LHip]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.RHip]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.MidHip]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.RKnee]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.LKnee]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.RAnkle]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.LAnkle]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.LHeel]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.RHeel]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.LSmallToe]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.RSmallToe]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.LBigToe]] is not None or \
+                human.pose[Human.BODY_PARTS[Human.Part.RBigToe]] is not None:
+                return True
+        return False
+
+    def has_body(self, human):
+        return self.has_upper_body(human) or self.has_lower_body(human)
+
+    def run(self, human, image):
+        guide_message_list = list()
         height, width = image.shape[0], image.shape[1]
-        cropped_height, cropped_width = cropped_image.shape[0], cropped_image.shape[1]
 
-        if human_pose == HumanPose.Stand:
-            # 서 있지만 발목이 잘린 경우
-            if human[BODY_PARTS["LAnkle"]] is None or human[BODY_PARTS["RAnkle"]] is None:
-                return "사람 발목이 잘리지 않게 하세요"
+        for key in Human.BODY_PARTS.keys():
+            if human.pose[Human.BODY_PARTS[key]] is not None:
+                center = np.array(human.pose[Human.BODY_PARTS[key]]) + np.array([human.extended_roi[1], human.extended_roi[0]])
+                center = tuple(center)
+                # cv2.circle(image, center, 3, (255, 0, 0), thickness=3)
+                # cv2.putText(image, key, center, cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 1, (0, 255, 255), 2)
 
-            if height > roi[2] + self.foot_lower_threshold:
-                return "발 끝을 사진 맨 밑에 맞추세요"
+        plt.imshow(image)
+        plt.show()
 
-        return None
+        # 서 있는 경우
+        if human.pose_class == HumanPose.Stand:
+            gamma = 5
+
+            # 사람이 사진 밑쪽에 위치한 경우
+            if human.roi[2] + gamma > height:
+                # 발목이 잘린 경우
+                # 무릎은 있으나 발목, 발꿈치 등이 모두 없는 경우
+                if human.pose[Human.BODY_PARTS["LAnkle"]] is None and human.pose[Human.BODY_PARTS["RAnkle"]] is None\
+                        and human.pose[Human.BODY_PARTS["LBigToe"]] is None and human.pose[Human.BODY_PARTS["LSmallToe"]] is None\
+                        and human.pose[Human.BODY_PARTS["RBigToe"]] is None and human.pose[Human.BODY_PARTS["RSmallToe"]] is None\
+                        and human.pose[Human.BODY_PARTS["LKnee"]] is not None and human.pose[Human.BODY_PARTS["RKnee"]] is not None:
+                    human_height = human[2] - human[0]
+                    diff = -human_height * 10 / 170
+                    guide_message_list.append(("발목이 잘리지 않게 발끝에 맞춰 찍어보세요", (diff, 0)))
+
+                # 무릎이 잘린 경우
+                if human.pose[Human.BODY_PARTS["LKnee"]] is None or human.pose[Human.BODY_PARTS["RKnee"]] is None:
+                    human_height = human[2] - human[0]
+                    diff = human_height * 20 / 170
+                    guide_message_list.append(("무릎이 잘리지 않게 허벅지까지만 찍어보세요", (diff, 0)))
+
+                if self.has_head(human):
+                    if not self.has_body(human):
+                        human_height = human[2] - human[0]
+                        diff = -human_height * 20 / 170
+                        guide_message_list.append(("관절(목)이 잘리지 않게 어깨까지 찍어보세요", (diff, 0)))
+
+            if height > human.roi[2] + self.foot_lower_threshold:
+                guide_message_list.append(("발 끝을 사진 맨 밑에 맞추세요", (height - human.roi[2] + self.foot_lower_threshold, 0)))
+
+            # 사람이 사진의 윗쪽에 위치한 경우
+            if human.roi[0] < gamma:
+                # 머리가 있다면
+                if self.has_head(human):
+                    top = height // 3
+                    diff = top - human.roi[0]
+                    guide_message_list.append(("머리 위에는 여백이 있는 것이 좋습니다", (diff, 0)))
+
+        return guide_message_list
