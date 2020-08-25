@@ -41,7 +41,7 @@ class InferenceConfig(coco.CocoConfig):
     # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
     GPU_COUNT = 1
     IMAGES_PER_GPU = 1
-    NUM_CLASSES = 1 + 80  # COCO has 80 classes + sky
+    NUM_CLASSES = 1 + 81  # COCO has 80 classes + sky
 
 config = InferenceConfig()
 config.display()
@@ -50,10 +50,10 @@ config.display()
 model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config=config)
 
 # Load weights trained on MS-COCO
-model.load_weights(COCO_MODEL_PATH, by_name=True)
+# model.load_weights(COCO_MODEL_PATH, by_name=True)
 
 # Last
-# model.load_weights(model.find_last(), by_name=True)
+model.load_weights(model.find_last(), by_name=True)
 
 # # Load COCO dataset
 # dataset = coco.CocoDataset()
@@ -82,7 +82,7 @@ class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
                'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote',
                'keyboard', 'cell phone', 'microwave', 'oven', 'toaster',
                'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors',
-               'teddy bear', 'hair drier', 'toothbrush']
+               'teddy bear', 'hair drier', 'toothbrush', 'sky']
 
 #%% md
 
@@ -114,10 +114,6 @@ while True:
     lab_planes[0] = clahe.apply(lab_planes[0])
     lab = cv2.merge(lab_planes)
     clahe_image = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
-
-    dst = np.hstack([image, res, clahe_image])
-    plt.imshow(dst)
-    plt.show()
 
     # 현재까지는 clahe 가 가장 보기 좋음
     # 적어도 effective line 을 찾기에는 유용함
