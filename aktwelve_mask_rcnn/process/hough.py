@@ -23,10 +23,6 @@ def find_hough_line(image):
     skicanny = np.array(skicanny, dtype=np.uint8) * 255
     # canny = cv2.Canny(erode, 2500, 1500, apertureSize=5, L2gradient=True)
 
-    # d = np.hstack([skicanny, canny])
-    # plt.imshow(d, cmap='gray')
-    # plt.show()
-
     lines = cv2.HoughLinesP(skicanny, 1, np.pi / 360, 100, minLineLength=200, maxLineGap=200)
 
     if lines is None:
