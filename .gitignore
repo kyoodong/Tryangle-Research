@@ -549,3 +549,9 @@ akwelv_mask_rcnn/ENV/
 */.idea/
 *.h5
 *.caffemodel
+
+**/datasets/**
+DataFormatConverter/*.json
+
+aktwelve_mask_rcnn/logs/
+aktwelve_mask_rcnn/codes/coco/dataset/
