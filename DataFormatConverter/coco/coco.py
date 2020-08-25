@@ -8,7 +8,7 @@ class CocoInfo:
         self.date_created = date_created
 
     def __str__(self):
-        return '{{"description":"{}","url":"{}","version":"{}","year":{},"contributor":"{}","date_created":"{}"}}\n'.format(
+        return '{{"description":"{}","url":"{}","version":"{}","year":{},"contributor":"{}","date_created":"{}"}}'.format(
             self.description, self.url, self.version, self.year, self.contributor, self.date_created
         )
 
@@ -23,7 +23,7 @@ class CocoLicense:
         self.name = name
 
     def __str__(self):
-        return '{{"url":"{}","id":{},"name":"{}"}}\n'.format(
+        return '{{"url":"{}","id":{},"name":"{}"}}'.format(
             self.url, self.id, self.name
         )
 
@@ -43,7 +43,7 @@ class CocoImage:
         self.id = id
 
     def __str__(self):
-        return '{{"license":{},"file_name":"{}","coco_url":"{}","height":{},"width":{},"date_captured":"{}","flickr_url":"{}","id":{}}}\n'.format(
+        return '{{"license":{},"file_name":"{}","coco_url":"{}","height":{},"width":{},"date_captured":"{}","flickr_url":"{}","id":{}}}'.format(
             self.license, self.file_name, self.coco_url, self.height, self.width, self.date_captured, self.flickr_url, self.id
         )
 
@@ -63,11 +63,11 @@ class CocoAnnotation:
 
     def __str__(self):
         if self.iscrowd == 0:
-            return '{{"segmentation":{},"area":{},"iscrowd":{},"image_id":{},"bbox":{},"category_id":{},"id":{}}}\n'.format(
+            return '{{"segmentation":{},"area":{},"iscrowd":{},"image_id":{},"bbox":{},"category_id":{},"id":{}}}'.format(
                 self.segmentation, self.area, self.iscrowd, self.image_id, self.bbox, self.category_id, self.id
             )
         else:
-            return '{{"segmentation":{{"counts":{},"size":{}}},"area":{},"iscrowd":{},"image_id":{},"bbox":{},"category_id":{},"id":{}}}\n'.format(
+            return '{{"segmentation":{{"counts":{},"size":{}}},"area":{},"iscrowd":{},"image_id":{},"bbox":{},"category_id":{},"id":{}}}'.format(
                 self.segmentation['counts'], self.segmentation['size'], self.area, self.iscrowd, self.image_id, self.bbox, self.category_id, self.id
             )
 
@@ -82,7 +82,7 @@ class CocoCategory:
         self.name = name
 
     def __str__(self):
-        return '{{"supercategory":"{}","id":{},"name":"{}"}}\n'.format(
+        return '{{"supercategory":"{}","id":{},"name":"{}"}}'.format(
             self.supercategory, self.id, self.name
         )
 
@@ -91,6 +91,9 @@ class CocoCategory:
 
 class Coco:
     def __init__(self, json_data):
+        self.image_id_list = dict()
+        self.next_id = 1
+
         # Coco info
         info_json = json_data['info']
         self.info = CocoInfo(info_json['description'], info_json['url'], info_json['version'],
@@ -111,10 +114,12 @@ class Coco:
                                    image_json['height'], image_json['width'], image_json['date_captured'],
                                    image_json['flickr_url'], image_json['id'])
             self.images.append(coco_image)
+            self.image_id_list[coco_image.id] = True
 
         # Annotations
         self.annotations = list()
-        self.max_annotation_id = 0
+        self.annotation_id_list = dict()
+        self.next_annotation_id = 1
         annotations_json = json_data['annotations']
         for annotation_json in annotations_json:
             coco_annotation = CocoAnnotation(annotation_json['segmentation'], annotation_json['area'],
@@ -122,7 +127,7 @@ class Coco:
                                              annotation_json['bbox'],
                                              annotation_json['category_id'], annotation_json['id'])
             self.annotations.append(coco_annotation)
-            self.max_annotation_id = max(self.max_annotation_id, coco_annotation.id)
+            self.annotation_id_list[coco_annotation.id] = True
 
         # Category
         self.categories = list()
@@ -133,12 +138,20 @@ class Coco:
             self.max_category_id = max(self.max_category_id, coco_category.id)
             self.categories.append(coco_category)
 
-    def is_existing_category(self, category_name):
+    def get_new_image_id(self):
+        while True:
+            if self.next_id not in self.image_id_list.keys():
+                self.image_id_list[self.next_id] = True
+                self.next_id += 1
+                return self.next_id - 1
+
+            self.next_id += 1
+
+    def get_category_id(self, category_name):
         for category in self.categories:
             if category.supercategory == category_name or category.name == category_name:
-                return True
-
-        return False
+                return category.id
+        return -1
 
     def add_category(self, supercategory, category_name):
         self.max_category_id += 1
@@ -155,10 +168,19 @@ class Coco:
                 return True
         return False
 
+    def get_new_annotation_id(self):
+        while True:
+            if self.next_annotation_id not in self.annotation_id_list.keys():
+                self.annotation_id_list[self.next_annotation_id] = True
+                self.next_annotation_id += 1
+                return self.next_annotation_id - 1
+
+            self.next_annotation_id += 1
+
     def add_annotation(self, segmentation, area, iscrowd, image_id, bbox, category_id):
-        self.max_annotation_id += 1
-        self.annotations.append(CocoAnnotation(segmentation, area, iscrowd, image_id, bbox, category_id, self.max_annotation_id))
-        return self.max_annotation_id
+        id = self.get_new_annotation_id()
+        self.annotations.append(CocoAnnotation(segmentation, area, iscrowd, image_id, bbox, category_id, id))
+        return id
 
     def __str__(self):
         return '{{"info": {}, "licenses": {}, "images": {}, "annotations": {}, "categories": {}}}'.format(

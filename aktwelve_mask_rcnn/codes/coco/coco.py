@@ -44,6 +44,7 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from pycocotools import mask as maskUtils
+from mrcnn import visualize
 
 import zipfile
 import urllib.request
@@ -486,6 +487,13 @@ if __name__ == '__main__':
             dataset_train.load_coco(args.dataset, "valminusminival", year=args.year, auto_download=args.download)
         dataset_train.prepare()
 
+        dataset = dataset_train
+        image_ids = np.random.choice(dataset.image_ids, 20)
+        for image_id in image_ids:
+            image = dataset.load_image(image_id)
+            mask, class_ids = dataset.load_mask(image_id)
+            visualize.display_top_masks(image, mask, class_ids, dataset.class_names)
+
         # Validation dataset
         dataset_val = CocoDataset()
         val_type = "val" if args.year in '2017' else "minival"
@@ -531,6 +539,7 @@ if __name__ == '__main__':
         coco = dataset_val.load_coco(args.dataset, val_type, year=args.year, return_coco=True, auto_download=args.download)
         dataset_val.prepare()
         print("Running COCO evaluation on {} images.".format(args.limit))
+
         evaluate_coco(model, dataset_val, coco, "bbox", limit=int(args.limit))
     else:
         print("'{}' is not recognized. "
