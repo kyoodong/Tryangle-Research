@@ -64,7 +64,7 @@ with open("datasets/coco_annotations/instances_val2017.json") as coco_json_file:
             coco.add_annotation(segmentation, area, 0, added_image_id, [int(v) for v in bbox], category_id)
 
     print('작성 중...')
-    f = open("val_annotation.json", "w")
+    f = open("datasets/coco_annotations/instances_val2017.json", "w")
     f.write(str(coco))
     f.close()
     print('완료!')
