@@ -552,3 +552,5 @@ akwelv_mask_rcnn/ENV/
 
 **/datasets/**
 DataFormatConverter/*.json
+
+aktwelve_mask_rcnn/logs/
