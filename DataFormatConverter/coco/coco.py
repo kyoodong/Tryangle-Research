@@ -158,6 +158,12 @@ class Coco:
         self.categories.append(CocoCategory(supercategory, self.max_category_id, category_name))
         return self.max_category_id
 
+    def find_image_id_by_filename(self, filename):
+        for image in self.images:
+            if image.file_name == filename:
+                return image.id
+        return -1
+
     def add_image(self, license, file_name, coco_url, height, width, date_captured, flickr_url, id):
         self.images.append(CocoImage(license, file_name, coco_url, height, width, date_captured, flickr_url, id))
         return id

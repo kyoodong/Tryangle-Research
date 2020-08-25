@@ -87,7 +87,7 @@ class CocoConfig(Config):
     # GPU_COUNT = 8
 
     # Number of classes (including background)
-    NUM_CLASSES = 1 + 81  # COCO has 80 classes + sky
+    NUM_CLASSES = 1 + 83  # COCO has 80 classes + sky + sea + ground
 
 
 ############################################################
@@ -487,12 +487,15 @@ if __name__ == '__main__':
             dataset_train.load_coco(args.dataset, "valminusminival", year=args.year, auto_download=args.download)
         dataset_train.prepare()
 
-        dataset = dataset_train
-        image_ids = np.random.choice(dataset.image_ids, 20)
-        for image_id in image_ids:
-            image = dataset.load_image(image_id)
-            mask, class_ids = dataset.load_mask(image_id)
-            visualize.display_top_masks(image, mask, class_ids, dataset.class_names)
+        # dataset = dataset_train
+        # image_ids = [i for i in range(201, 300)]
+        # for image_id in image_ids:
+        #     try:
+        #         image = dataset.load_image(image_id)
+        #         mask, class_ids = dataset.load_mask(image_id)
+        #         visualize.display_top_masks(image, mask, class_ids, dataset.class_names)
+        #     except:
+        #         print("dd")
 
         # Validation dataset
         dataset_val = CocoDataset()
