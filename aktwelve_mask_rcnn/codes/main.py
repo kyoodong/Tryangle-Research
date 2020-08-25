@@ -133,6 +133,10 @@ while True:
     sub_obj_list = list()
     main_obj = None
 
+    # all_layered_image 는 레이아웃화 된 객체 이미지들을 하나의 이미지로 합치는 변수
+    all_layered_image = np.zeros([image.shape[0], image.shape[1], 1])
+    guided_all_layered_image = np.zeros([image.shape[0], image.shape[1], 1])
+
     for index, center_point in enumerate(center_points):
         if center_point:
             # roi 를 살짝 넓직하게 잡아야 사람 포즈 인식이 잘됨
@@ -155,39 +159,29 @@ while True:
                 roi[3] = np.clip(roi[3], 0, height)
 
                 cropped_image = image[roi[0]: roi[2], roi[1]:roi[3]]
-                plt.imshow(cropped_image)
-                plt.show()
 
                 pose = cv_estimator.inference(cropped_image)
                 pose_class = pose_classifier.run(pose)
-                human = Human(obj, pose, pose_class, cropped_image, roi)
-                sub_obj_list.append(human)
+                obj = Human(obj, pose, pose_class, cropped_image, roi)
 
-            else:
-                sub_obj_list.append(obj)
+            sub_obj_list.append(obj)
+            layered_image = layered_images[:, :, index]
+            all_layered_image[:, :, 0] += layered_image
 
-    # all_layered_image 는 레이아웃화 된 객체 이미지들을 하나의 이미지로 합치는 변수
-    all_layered_image = np.zeros([image.shape[0], image.shape[1], 1])
-    guided_all_layered_image = np.zeros([image.shape[0], image.shape[1], 1])
+            guide_message_list = image_api.get_obj_position_guides(obj, image)
+            print(guide_message_list)
 
-    # 합치기
-    for i in range(layered_images.shape[-1]):
-        layered_image = layered_images[:, :, i]
-        all_layered_image[:, :, 0] += layered_image
-
-        obj = sub_obj_list[i]
-        guide_message_list = image_api.get_obj_position_guides(obj, image)
-        print(guide_message_list)
-
-        # layered_image = layered_image.reshape(layered_image.shape[0], layered_image.shape[1], 1)
-        for guide_message in guide_message_list:
-            position_diff = guide_message[1]
-            shift_image = image_api.shift_image(layered_image, position_diff[1], position_diff[0])
-            guided_all_layered_image[:, :, 0] += shift_image
+            # layered_image = layered_image.reshape(layered_image.shape[0], layered_image.shape[1], 1)
+            for guide_message in guide_message_list:
+                position_diff = guide_message[1]
+                shift_image = image_api.shift_image(layered_image, position_diff[1], position_diff[0])
+                guided_all_layered_image[:, :, 0] += shift_image
 
     plt.subplot(1, 2, 1)
+    plt.title("Before guide")
     plt.imshow(all_layered_image, 'gray')
     plt.subplot(1, 2, 2)
+    plt.title("After guide")
     plt.imshow(guided_all_layered_image, 'gray')
     plt.show()
 
