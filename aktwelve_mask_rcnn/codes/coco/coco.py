@@ -44,7 +44,6 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from pycocotools import mask as maskUtils
-from mrcnn import visualize
 
 import zipfile
 import urllib.request
@@ -88,6 +87,8 @@ class CocoConfig(Config):
 
     # Number of classes (including background)
     NUM_CLASSES = 1 + 83  # COCO has 80 classes + sky + sea + ground
+
+    STEPS_PER_EPOCH = 2000
 
 
 ############################################################
