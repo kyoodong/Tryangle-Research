@@ -142,7 +142,7 @@ def get_obj_position_guides(obj, image):
         pose_guider = PoseGuider()
         pose_guide = pose_guider.run(obj, image)
         if pose_guide:
-            guide_message_list.append(pose_guide)
+            guide_message_list.extend(pose_guide)
 
     left_side = int(image_w / 3)
     right_side = int(image_w / 3 * 2)
@@ -154,8 +154,8 @@ def get_obj_position_guides(obj, image):
 
     golden_ratio_area_list = get_golden_ratio_area(image_h, image_w)
 
-    for golden_ratio_area in golden_ratio_area_list:
-        cv2.rectangle(image, (golden_ratio_area[0], golden_ratio_area[1]), (golden_ratio_area[2], golden_ratio_area[3]), (255, 0, 0))
+    # for golden_ratio_area in golden_ratio_area_list:
+    #     cv2.rectangle(image, (golden_ratio_area[0], golden_ratio_area[1]), (golden_ratio_area[2], golden_ratio_area[3]), (255, 0, 0))
 
     if left_diff < right_diff:
         if left_diff < middle_diff:
