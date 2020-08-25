@@ -2330,8 +2330,8 @@ class MaskRCNN(object):
 
         # Callbacks
         callbacks = [
-            keras.callbacks.TensorBoard(log_dir=self.log_dir,
-                                        histogram_freq=0, write_graph=True, write_images=False),
+            # keras.callbacks.TensorBoard(log_dir=self.log_dir,
+            #                             histogram_freq=0, write_graph=True, write_images=False),
             keras.callbacks.ModelCheckpoint(self.checkpoint_path,
                                             verbose=0, save_weights_only=True),
         ]
@@ -2362,9 +2362,9 @@ class MaskRCNN(object):
             callbacks=callbacks,
             validation_data=val_generator,
             validation_steps=self.config.VALIDATION_STEPS,
-            max_queue_size=100,
-            workers=workers,
-            use_multiprocessing=workers > 1
+            max_queue_size=100
+            # workers=workers,
+            # use_multiprocessing=workers > 1
         )
         self.epoch = max(self.epoch, epochs)
 
