@@ -28,8 +28,8 @@ Opencv 모듈을 테스트하고자 만든 프로젝트
 
 ## aktwelve_mask_rcnn
 https://github.com/akTwelve/Mask_RCNN
-해당 공개 소스를 인용하여 작업중인 프로젝트
-현재 TriAngle 의 핵심 소스가 구현된 프로젝트이다.
+해당 공개 소스를 인용하여 작업중인 프로젝트  
+현재 TriAngle 의 핵심 소스가 구현된 프로젝트이다.  
 
-main.py : 이미지를 선택하면 해당 이미지에 대한 가이드를 제공하는 파일
-coco.py : MaskRCNN을 Finetuning 하는 파일. 현재 하늘, 땅, 바다를 추가 학습 중임
+main.py : 이미지를 선택하면 해당 이미지에 대한 가이드를 제공하는 파일  
+coco.py : MaskRCNN을 Finetuning 하는 파일. 현재 하늘, 땅, 바다를 추가 학습 중임  
