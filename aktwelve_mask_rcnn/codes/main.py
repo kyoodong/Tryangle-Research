@@ -214,4 +214,3 @@ while True:
     if sub_obj_list and effective_lines:
         guide_message_list = text_guider.get_obj_line_guides(sub_obj_list, effective_lines, image)
         print(guide_message_list)
-        
