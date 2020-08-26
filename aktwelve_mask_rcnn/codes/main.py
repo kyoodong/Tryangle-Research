@@ -6,11 +6,12 @@ import numpy as np
 import skimage.io
 import matplotlib
 import matplotlib.pyplot as plt
-from process import image_api, hough
+from process import text_guider, hough
 from process.object import Object, Human
 import cv2
 import copy
 from process.pose import CVPoseEstimator, PoseGuider, CvClassifier, HumanPose
+import process.guide_image as guide_image
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath("../")
@@ -41,7 +42,7 @@ class InferenceConfig(coco.CocoConfig):
     # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
     GPU_COUNT = 1
     IMAGES_PER_GPU = 1
-    NUM_CLASSES = 1 + 81  # COCO has 80 classes + sky
+    NUM_CLASSES = 1 + 80  # COCO has 80 classes + sky
 
 config = InferenceConfig()
 config.display()
@@ -128,7 +129,7 @@ while True:
     # 객체마다 외곽선만 따도록 수정
     # [image_height][image_width][num_of_obj]
     # 위와 같은 shape 로 이미지가 처리되며 num_of_obj 개수로 나뉜 이미지들을 하나의 이미지로 합쳐야함
-    layered_images, center_points = image_api.get_contour_center_point(r['masks'], 0.01)
+    layered_images, center_points = text_guider.get_contour_center_point(r['masks'], 0.01)
 
     sub_obj_list = list()
     main_obj = None
@@ -168,13 +169,13 @@ while True:
             layered_image = layered_images[:, :, index]
             all_layered_image[:, :, 0] += layered_image
 
-            guide_message_list = image_api.get_obj_position_guides(obj, image)
+            guide_message_list = text_guider.get_obj_position_guides(obj, image)
             print(guide_message_list)
 
             # layered_image = layered_image.reshape(layered_image.shape[0], layered_image.shape[1], 1)
             for guide_message in guide_message_list:
                 position_diff = guide_message[1]
-                shift_image = image_api.shift_image(layered_image, position_diff[1], position_diff[0])
+                shift_image = text_guider.shift_image(layered_image, position_diff[1], position_diff[0])
                 guided_all_layered_image[:, :, 0] += shift_image
 
     plt.subplot(1, 2, 1)
@@ -193,7 +194,7 @@ while True:
     effective_lines = hough.find_hough_line(image)
     if effective_lines:
         for line in effective_lines:
-            guide_message_list = image_api.get_line_position_guides(line)
+            guide_message_list = text_guider.get_line_position_guides(line)
             print(guide_message_list)
 
     # 중요한 선을 시각화하기 위함
@@ -211,6 +212,6 @@ while True:
                                 class_names, r['scores'])
 
     if sub_obj_list and effective_lines:
-        guide_message_list = image_api.get_obj_line_guides(sub_obj_list, effective_lines, image)
+        guide_message_list = text_guider.get_obj_line_guides(sub_obj_list, effective_lines, image)
         print(guide_message_list)
-
+        
