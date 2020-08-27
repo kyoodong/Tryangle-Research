@@ -7,94 +7,29 @@ import skimage.io
 import matplotlib
 import matplotlib.pyplot as plt
 from process import text_guider, hough
-from process.object import Object, Human
 import cv2
 import copy
+from process.object import Object, Human
 from process.pose import CVPoseEstimator, PoseGuider, CvClassifier, HumanPose
-import process.guide_image as guide_image
+from process.segmentation import MaskRCNN
+import process.segmentation as segmentation
+from process import text_guider, hough
+
+from mrcnn import visualize
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath("../")
+IMAGE_DIR = os.path.join(ROOT_DIR, "images")
 
 # Import Mask RCNN
 sys.path.append(ROOT_DIR)  # To find local version of the library
-from mrcnn import utils
-import mrcnn.model as modellib
-from mrcnn import visualize
-# Import COCO config
-sys.path.append(os.path.join(ROOT_DIR, "codes/coco/"))  # To find local version
-import coco
-
-# Directory to save logs and trained model
-MODEL_DIR = os.path.join(ROOT_DIR, "logs")
-
-# Local path to trained weights file
-COCO_MODEL_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
-# Download COCO trained weights from Releases if needed
-if not os.path.exists(COCO_MODEL_PATH):
-    utils.download_trained_weights(COCO_MODEL_PATH)
-
-# Directory of images to run detection on
-IMAGE_DIR = os.path.join(ROOT_DIR, "images")
-
-class InferenceConfig(coco.CocoConfig):
-    # Set batch size to 1 since we'll be running inference on
-    # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
-    GPU_COUNT = 1
-    IMAGES_PER_GPU = 1
-    NUM_CLASSES = 1 + 80  # COCO has 80 classes + sky
-
-config = InferenceConfig()
-config.display()
-
-# Create model obj in inference mode.
-model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config=config)
-
-# Load weights trained on MS-COCO
-# model.load_weights(COCO_MODEL_PATH, by_name=True)
-
-# Last
-model.load_weights(model.find_last(), by_name=True)
-
-# # Load COCO dataset
-# dataset = coco.CocoDataset()
-# dataset.load_coco(COCO_DIR, "train")
-# dataset.prepare()
-#
-# # Print class names
-# print(dataset.class_names)
-
-#%%
-
-# COCO Class names
-# Index of the class in the list is its ID. For example, to get ID of
-# the teddy bear class, use: class_names.index('teddy bear')
-class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
-               'bus', 'train', 'truck', 'boat', 'traffic light',
-               'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird',
-               'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear',
-               'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie',
-               'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball',
-               'kite', 'baseball bat', 'baseball glove', 'skateboard',
-               'surfboard', 'tennis racket', 'bottle', 'wine glass', 'cup',
-               'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
-               'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza',
-               'donut', 'cake', 'chair', 'couch', 'potted plant', 'bed',
-               'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote',
-               'keyboard', 'cell phone', 'microwave', 'oven', 'toaster',
-               'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors',
-               'teddy bear', 'hair drier', 'toothbrush', 'sky', 'sea', 'ground']
-
-#%% md
-
-## Run obj Detection
-
-#%%
 
 # Load a random image from the images folder
 file_names = next(os.walk(IMAGE_DIR))[2]
-cv_estimator = CVPoseEstimator()
 pose_classifier = CvClassifier()
+cv_estimator = CVPoseEstimator()
+mask_rcnn = MaskRCNN()
+
 
 while True:
     image_file_name = input("파일명을 입력하세요 : ")
@@ -121,9 +56,8 @@ while True:
     image = clahe_image
 
     # Run detection
-    results = model.detect([image], verbose=1)
+    results = mask_rcnn.detect(image)
 
-    # Visualize results
     r = results[0]
 
     # 객체마다 외곽선만 따도록 수정
@@ -131,12 +65,11 @@ while True:
     # 위와 같은 shape 로 이미지가 처리되며 num_of_obj 개수로 나뉜 이미지들을 하나의 이미지로 합쳐야함
     layered_images, center_points = text_guider.get_contour_center_point(r['masks'], 0.01)
 
-    sub_obj_list = list()
-    main_obj = None
-
     # all_layered_image 는 레이아웃화 된 객체 이미지들을 하나의 이미지로 합치는 변수
     all_layered_image = np.zeros([image.shape[0], image.shape[1], 1])
     guided_all_layered_image = np.zeros([image.shape[0], image.shape[1], 1])
+
+    sub_obj_list = list()
 
     for index, center_point in enumerate(center_points):
         if center_point:
@@ -178,6 +111,11 @@ while True:
                 shift_image = text_guider.shift_image(layered_image, position_diff[1], position_diff[0])
                 guided_all_layered_image[:, :, 0] += shift_image
 
+    visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'],
+                                segmentation.class_names, r['scores'])
+
+    main_obj = None
+
     plt.subplot(1, 2, 1)
     plt.title("Before guide")
     plt.imshow(all_layered_image, 'gray')
@@ -207,9 +145,6 @@ while True:
     # 선으로 이루어진 객체들 시각화
     plt.imshow(all_layered_image, 'gray', vmin=0, vmax=1)
     plt.show()
-
-    visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'],
-                                class_names, r['scores'])
 
     if sub_obj_list and effective_lines:
         guide_message_list = text_guider.get_obj_line_guides(sub_obj_list, effective_lines, image)
