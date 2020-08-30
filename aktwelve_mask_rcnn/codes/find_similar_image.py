@@ -89,5 +89,5 @@ while True:
     results2 = mask_rcnn.detect(image2)
 
     main_obj = None
-    all_layered_image, guided_all_layered_image, sub_obj_list = mask_rcnn.get_layered_image(image, results)
-    all_layered_image2, guided_all_layered_image2, sub_obj_list2 = mask_rcnn.get_layered_image(image2, results2)
+
+
