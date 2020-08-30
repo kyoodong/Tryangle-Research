@@ -555,3 +555,9 @@ DataFormatConverter/*.json
 
 aktwelve_mask_rcnn/logs/
 aktwelve_mask_rcnn/codes/coco/dataset/
+
+aktwelve_mask_rcnn/HigherHRNet-Human-Pose-Estimation/cocoapi
+aktwelve_mask_rcnn/HigherHRNet-Human-Pose-Estimation/CrowdPose
+aktwelve_mask_rcnn/HigherHRNet-Human-Pose-Estimation/models
+aktwelve_mask_rcnn/HigherHRNet-Human-Pose-Estimation/data
+
