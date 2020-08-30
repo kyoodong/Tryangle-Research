@@ -215,7 +215,8 @@ def get_obj_line_guides(objs, lines, image):
     threshold = 10
     for obj in objs:
         if obj.is_person():
-            joint_list = [("Neck", "목", "어깨")]
+            # joint_list = [("Neck", "목", "어깨")]
+            joint_list = []
 
             # 선이 관절을 지나는지 검사
             for joint in joint_list:
