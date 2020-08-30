@@ -29,6 +29,7 @@ import copy
 
 import _init_paths
 import models
+from glob import glob
 
 from config import cfg
 from config import check_config
@@ -158,10 +159,12 @@ def main():
         )
 
     parser = HeatmapParser(cfg)
+    POSE_THRESHOLD = 0.02
 
-    while True:
-        filename = input('이미지 파일명 : ')
-        image = cv2.imread('../images/{}.jpg'.format(filename))
+    files = glob('../images/*.jpg')
+
+    for filename in files:
+        image = cv2.imread(filename)
         # size at scale 1.0
         base_size, center, scale = get_multi_scale_size(
             image, cfg.DATASET.INPUT_SIZE, 1.0, min(cfg.TEST.SCALE_FACTOR)
@@ -201,17 +204,20 @@ def main():
                 [final_heatmaps.size(3), final_heatmaps.size(2)]
             )
 
+            if len(scores) == 0:
+                continue
+
             result_image = copy.copy(image)
-            for final_result in final_results:
-                for result in final_result:
-                    result_image = cv2.circle(result_image, (result[0], result[1]), 4, (255, 0, 0))
+            max_index = np.argmax(scores)
+            for result in final_results[max_index]:
+                if result[2] > POSE_THRESHOLD:
+                    result_image = cv2.circle(result_image, (result[0], result[1]), 4, (255, 0, 0), 2)
 
             plt.subplot(1, 2, 1)
             plt.imshow(image)
             plt.subplot(1, 2, 2)
             plt.imshow(result_image)
             plt.show()
-
 
 if __name__ == '__main__':
     main()

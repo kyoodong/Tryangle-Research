@@ -24,7 +24,7 @@ IMAGE_DIR = os.path.join(ROOT_DIR, "images")
 class InferenceConfig(coco.CocoConfig):
     GPU_COUNT = 1
     IMAGES_PER_GPU = 1
-    NUM_CLASSES = 1 + 80 + 3  # COCO has 80 classes + sky
+    NUM_CLASSES = 1 + 80 + 0  # COCO has 80 classes + sky
 
 
 config = InferenceConfig()
