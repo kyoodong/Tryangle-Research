@@ -2,9 +2,10 @@ import os
 import cv2
 import skimage.io
 import matplotlib.pyplot as plt
-import process.guide_image as guide_image
+import process.color as color_guide
 import numpy as np
 from process.segmentation import MaskRCNN
+from process.color import Color
 
 
 ROOT_DIR = os.path.abspath("../")
@@ -20,35 +21,21 @@ while True:
     image_file_name = input("파일명을 입력하세요 : ")
     # image = skimage.io.imread(os.path.join(IMAGE_DIR, random.choice(file_names)))
     image = skimage.io.imread(os.path.join(IMAGE_DIR, "{}.jpg".format(image_file_name)))
-
-    dominant_colors, counts = guide_image.find_dominant_colors(image)
-    dominant_color_image = np.zeros((0, 150, 3), np.uint8)
-    for dominant_color in dominant_colors:
-        im = np.zeros((30 * len(dominant_colors), 150, 3), np.uint8)
-        im += dominant_color
-        dominant_color_image = np.vstack([dominant_color_image, im])
+    dominant_color1 = color_guide.find_dominant_colors(image)
 
     # Image2
     image_file_name2 = input("파일명을 입력하세요 : ")
     image2 = skimage.io.imread(os.path.join(IMAGE_DIR, "{}.jpg".format(image_file_name2)))
-
-    dominant_colors2, counts2 = guide_image.find_dominant_colors(image2)
-    dominant_color_image2 = np.zeros((0, 150, 3), np.uint8)
-    for dominant_color in dominant_colors2:
-        im = np.zeros((30 * len(dominant_colors), 150, 3), np.uint8)
-        im += dominant_color
-        dominant_color_image2 = np.vstack([dominant_color_image2, im])
+    dominant_color2 = color_guide.find_dominant_colors(image2)
 
     plt.subplot(1, 2, 1)
-    plt.imshow(dominant_color_image)
+    plt.imshow(image)
     plt.subplot(1, 2, 2)
-    plt.imshow(dominant_color_image2)
+    plt.imshow(image2)
     plt.show()
 
-    color_diff = guide_image.diff_dominant_color(dominant_colors, counts, dominant_colors2, counts2)
-    print('color diff = ', color_diff)
-
-    if color_diff < COLOR_THRESHOLD:
+    print([Color.Category.NAMES[i] for i in dominant_color1], [Color.Category.NAMES[i] for i in dominant_color2])
+    if len(np.intersect1d(dominant_color1, dominant_color2)) >= 2:
         print("두 이미지는 비슷한 색을 지녔습니다")
     else:
         print("두 이미지의 색은 비슷하지 않습니다.")
