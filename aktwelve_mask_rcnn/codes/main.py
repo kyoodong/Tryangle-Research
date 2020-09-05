@@ -10,7 +10,7 @@ from process import text_guider, hough
 import cv2
 import copy
 from process.object import Object, Human
-from process.pose import CVPoseEstimator, PoseGuider, CvClassifier, HumanPose
+from process.pose import CVPoseEstimator, PoseGuider, CvClassifier, Pose
 from process.segmentation import MaskRCNN
 import process.segmentation as segmentation
 from process import text_guider, hough
@@ -94,7 +94,7 @@ while True:
 
                 cropped_image = image[roi[0]: roi[2], roi[1]:roi[3]]
 
-                pose = cv_estimator.inference(cropped_image)
+                pose = Pose(cv_estimator.inference(cropped_image))
                 pose_class = pose_classifier.run(pose)
                 obj = Human(obj, pose, pose_class, cropped_image, roi)
 

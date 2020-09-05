@@ -48,13 +48,6 @@ import matplotlib.pyplot as plt
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 
-
-class HumanPose(Enum):
-    Unknown = 0
-    Stand = 1
-    Sit = 2
-
-
 # caffemodel 파일 다운로드
 # wget -c http://posefs1.perception.cs.cmu.edu/OpenPose/models/pose/mpi/pose_iter_160000.caffemodel -P pose
 
@@ -137,7 +130,23 @@ else:
     )
 
 parser = HeatmapParser(cfg)
-POSE_THRESHOLD = 0.02
+
+
+class Pose:
+    Unknown = 0
+    Stand = 1
+    Sit = 2
+    POSE_THRESHOLD = 0.02
+
+    def __init__(self, pose_list):
+        self.pose_list = pose_list
+
+    def has(self, body_part):
+        return self.pose_list[Human.BODY_PARTS[body_part]][2] > Pose.POSE_THRESHOLD
+
+    def __getitem__(self, item):
+        return self.pose_list[item]
+
 
 
 class CVPoseEstimator:
@@ -212,7 +221,7 @@ class CvClassifier(PoseClassifier):
     def __init__(self):
         self.gamma = 0.05
 
-    def __extract(self, human):
+    def __extract(self, human_pose):
         self.left_ankle = -1
         self.right_ankle = -1
         self.left_hip = -1
@@ -221,17 +230,17 @@ class CvClassifier(PoseClassifier):
         self.right_knee = -1
 
         # pose estimation 결과 중 유의미한 정보만을 뽑아냄
-        if human[Human.BODY_PARTS[Human.Part.LHip]][2] > POSE_THRESHOLD:
-            self.left_hip = human[Human.BODY_PARTS[Human.Part.LHip]][1]
+        if human_pose.has(Human.Part.LHip):
+            self.left_hip = human_pose[Human.BODY_PARTS[Human.Part.LHip]][1]
 
-        if human[Human.BODY_PARTS[Human.Part.RHip]][2] > POSE_THRESHOLD:
-            self.right_hip = human[Human.BODY_PARTS[Human.Part.RHip]][1]
+        if human_pose.has(Human.Part.RHip):
+            self.right_hip = human_pose[Human.BODY_PARTS[Human.Part.RHip]][1]
 
-        if human[Human.BODY_PARTS[Human.Part.LKnee]][2] > POSE_THRESHOLD:
-            self.left_knee = human[Human.BODY_PARTS[Human.Part.LKnee]][1]
+        if human_pose.has(Human.Part.LKnee):
+            self.left_knee = human_pose[Human.BODY_PARTS[Human.Part.LKnee]][1]
 
-        if human[Human.BODY_PARTS[Human.Part.RKnee]][2] > POSE_THRESHOLD:
-            self.right_knee = human[Human.BODY_PARTS[Human.Part.RKnee]][1]
+        if human_pose.has(Human.Part.RKnee):
+            self.right_knee = human_pose[Human.BODY_PARTS[Human.Part.RKnee]][1]
 
     def run(self, pose):
         self.__extract(pose)
@@ -239,9 +248,9 @@ class CvClassifier(PoseClassifier):
         # 무릎의 높이가 엉덩이의 높이보다 낮은 경우, 서 있다(stand)고 판단
         if (self.left_knee != -1 and self.left_hip != -1 and self.left_knee > self.left_hip + self.gamma) or \
                 (self.right_knee != -1 and self.right_hip != -1 and self.right_knee > self.right_hip + self.gamma):
-            return HumanPose.Stand
+            return Pose.Stand
 
-        return HumanPose.Unknown
+        return Pose.Unknown
 
 
 class PoseGuider:
@@ -249,27 +258,27 @@ class PoseGuider:
         self.foot_lower_threshold = 10
 
     def has_head(self, human):
-        if human.pose[Human.BODY_PARTS[Human.Part.LEar]][2] > POSE_THRESHOLD or \
-                human.pose[Human.BODY_PARTS[Human.Part.REar]][2] > POSE_THRESHOLD or \
-                human.pose[Human.BODY_PARTS[Human.Part.LEye]][2] > POSE_THRESHOLD or \
-                human.pose[Human.BODY_PARTS[Human.Part.REye]][2] > POSE_THRESHOLD or \
-                human.pose[Human.BODY_PARTS[Human.Part.Nose]][2] > POSE_THRESHOLD:
+        if human.pose.has(Human.Part.LEar) or \
+                human.pose.has(Human.Part.REar) or \
+                human.pose.has(Human.Part.LEye) or \
+                human.pose.has(Human.Part.REye) or \
+                human.pose.has(Human.Part.Nose):
                 return True
         return False
 
     def has_upper_body(self, human):
-        if human.pose[Human.BODY_PARTS[Human.Part.LShoulder]][2] > POSE_THRESHOLD or \
-                human.pose[Human.BODY_PARTS[Human.Part.RShoulder]][2] > POSE_THRESHOLD:
+        if human.pose.has(Human.Part.LShoulder) or \
+                human.pose.has(Human.Part.RShoulder):
                 return True
         return False
 
     def has_lower_body(self, human):
-        if human.pose[Human.BODY_PARTS[Human.Part.LHip]][2] > POSE_THRESHOLD or \
-                human.pose[Human.BODY_PARTS[Human.Part.RHip]][2] > POSE_THRESHOLD or \
-                human.pose[Human.BODY_PARTS[Human.Part.RKnee]][2] > POSE_THRESHOLD or \
-                human.pose[Human.BODY_PARTS[Human.Part.LKnee]][2] > POSE_THRESHOLD or \
-                human.pose[Human.BODY_PARTS[Human.Part.RAnkle]][2] > POSE_THRESHOLD or \
-                human.pose[Human.BODY_PARTS[Human.Part.LAnkle]][2] > POSE_THRESHOLD:
+        if human.pose.has(Human.Part.LHip) or \
+                human.pose.has(Human.Part.RHip) or \
+                human.pose.has(Human.Part.RKnee) or \
+                human.pose.has(Human.Part.LKnee) or \
+                human.pose.has(Human.Part.RAnkle) or \
+                human.pose.has(Human.Part.LAnkle):
                 return True
         return False
 
@@ -281,8 +290,8 @@ class PoseGuider:
         height, width = image.shape[0], image.shape[1]
 
         for key in Human.BODY_PARTS.keys():
-            if human.pose[Human.BODY_PARTS[key]][2] > POSE_THRESHOLD:
-                center = np.array(human.pose[Human.BODY_PARTS[key]][:2]) + np.array([human.extended_roi[1], human.extended_roi[0]])
+            if human.pose.has(key):
+                center = np.array(human.pose.pose_list[Human.BODY_PARTS[key]][:2]) + np.array([human.extended_roi[1], human.extended_roi[0]])
                 center = tuple(center)
                 # cv2.circle(image, center, 3, (255, 0, 0), thickness=3)
                 # cv2.putText(image, key, center, cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 1, (0, 255, 255), 2)
@@ -291,21 +300,23 @@ class PoseGuider:
         plt.show()
 
         # 서 있는 경우
-        if human.pose_class == HumanPose.Stand:
+        if human.pose_class == Pose.Stand:
             gamma = 5
 
             # 사람이 사진 밑쪽에 위치한 경우
             if human.roi[2] + gamma > height:
                 # 발목이 잘린 경우
-                # 무릎은 있으나 발목, 발꿈치 등이 모두 없는 경우
-                if human.pose[Human.BODY_PARTS[Human.Part.LAnkle]][2] <= POSE_THRESHOLD and human.pose[Human.BODY_PARTS[Human.Part.RAnkle]][2] <= POSE_THRESHOLD\
-                        and human.pose[Human.BODY_PARTS[Human.Part.LKnee]][2] > POSE_THRESHOLD and human.pose[Human.BODY_PARTS[Human.Part.RKnee]][2] > POSE_THRESHOLD:
+                # 무릎은 있으나 발목이 모두 없는 경우
+                if not human.pose.has(Human.Part.LAnkle) \
+                        and not human.pose.has(Human.Part.RAnkle)\
+                        and human.pose.has(Human.Part.LKnee) \
+                        and human.pose.has(Human.Part.RKnee):
                     human_height = human[2] - human[0]
                     diff = -human_height * 10 / 170
                     guide_message_list.append(("발목이 잘리지 않게 발끝에 맞춰 찍어보세요", (diff, 0)))
 
                 # 무릎이 잘린 경우
-                if human.pose[Human.BODY_PARTS["LKnee"]][2] <= POSE_THRESHOLD or human.pose[Human.BODY_PARTS["RKnee"]][2] <= POSE_THRESHOLD:
+                if not human.pose.has(Human.Part.LKnee) or not human.pose.has(Human.Part.RKnee):
                     human_height = human[2] - human[0]
                     diff = human_height * 20 / 170
                     guide_message_list.append(("무릎이 잘리지 않게 허벅지까지만 찍어보세요", (diff, 0)))

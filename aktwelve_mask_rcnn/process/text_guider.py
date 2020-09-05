@@ -3,7 +3,7 @@ import cv2
 import os
 import sys
 import matplotlib.pyplot as plt
-from process.pose import CVPoseEstimator, PoseGuider, CvClassifier, HumanPose
+from process.pose import CVPoseEstimator, PoseGuider, CvClassifier, Pose
 from process.object import Object, Human
 import numpy as np
 
