@@ -1,8 +1,5 @@
 import os
 import sys
-import numpy as np
-from process.pose import CVPoseEstimator, PoseGuider, CvClassifier, HumanPose
-import copy
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath("../")

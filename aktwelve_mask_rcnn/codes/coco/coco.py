@@ -506,12 +506,7 @@ if __name__ == '__main__':
 
         # Image Augmentation
         # Right/Left flip 50% of the time
-        augmentation = imgaug.augmenters.Sometimes(0.5, [
-            imgaug.augmenters.Fliplr(0.5),
-            imgaug.augmenters.GaussianBlur(sigma=(0.0, 5.0)),
-            imgaug.augmenters.TranslateX(),
-            imgaug.augmenters.TranslateY()
-        ])
+        augmentation = imgaug.augmenters.Fliplr(0.5)
 
         # *** This training schedule is an example. Update to your needs ***
 
