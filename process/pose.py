@@ -2,49 +2,34 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import cv2
-import matplotlib.pyplot as plt
-import os
-from enum import Enum
-from process.object import Human
-
-import argparse
 import os
 import pprint
 
+import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
+import torch.multiprocessing
 import torch.nn.parallel
 import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
 import torchvision.transforms
-import torch.multiprocessing
-from tqdm import tqdm
-import skimage
-import cv2
-import numpy as np
-import copy
-
-import _init_paths
+# import models 필수!
 import models
-
 from config import cfg
 from config import check_config
 from config import update_config
-from core.inference import get_multi_stage_outputs
-from core.inference import aggregate_results
 from core.group import HeatmapParser
-from dataset import make_test_dataloader
+from core.inference import aggregate_results
+from core.inference import get_multi_stage_outputs
 from fp16_utils.fp16util import network_to_half
-from utils.utils import create_logger
-from utils.utils import get_model_summary
-from utils.vis import save_debug_images
-from utils.vis import save_valid_image
-from utils.transforms import resize_align_multi_scale
 from utils.transforms import get_final_preds
 from utils.transforms import get_multi_scale_size
-import matplotlib.pyplot as plt
+from utils.transforms import resize_align_multi_scale
+from utils.utils import create_logger
+from utils.utils import get_model_summary
+
+from process.object import Human
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 
