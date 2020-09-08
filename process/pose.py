@@ -51,11 +51,13 @@ class Arg:
         self.opts = None
 
 
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
+
 args = Arg()
-args.cfg = '../human_pose/experiments/coco/higher_hrnet/w32_512_adam_lr1e-3.yaml'
+args.cfg = '{}/human_pose/experiments/coco/higher_hrnet/w32_512_adam_lr1e-3.yaml'.format(ROOT_DIR)
 args.opts = list()
 args.opts.append('TEST.MODEL_FILE')
-args.opts.append('../human_pose/models/pytorch/pose_coco/pose_higher_hrnet_w32_512.pth')
+args.opts.append('{}/human_pose/models/pytorch/pose_coco/pose_higher_hrnet_w32_512.pth'.format(ROOT_DIR))
 
 update_config(cfg, args)
 check_config(cfg)

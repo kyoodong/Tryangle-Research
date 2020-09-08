@@ -1,5 +1,6 @@
 import os
 import sys
+import tensorflow as tf
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
@@ -16,6 +17,9 @@ COCO_MODEL_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
 if not os.path.exists(COCO_MODEL_PATH):
     utils.download_trained_weights(COCO_MODEL_PATH)
 IMAGE_DIR = os.path.join(ROOT_DIR, "images")
+
+session = tf.compat.v1.Session()
+tf.compat.v1.keras.backend.set_session(session)
 
 
 class InferenceConfig(coco.CocoConfig):
@@ -41,6 +45,7 @@ model.load_weights(COCO_MODEL_PATH, by_name=True)
 # # Print class names
 # print(dataset.class_names)
 
+
 class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
                'bus', 'train', 'truck', 'boat', 'traffic light',
                'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird',
@@ -60,4 +65,7 @@ class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
 
 class MaskRCNN:
     def detect(self, image):
-        return model.detect([image], verbose=1)
+        with session.as_default():
+            with session.graph.as_default():
+                model.keras_model._make_predict_function()
+                return model.detect([image], verbose=1)
