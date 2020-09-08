@@ -9,3 +9,17 @@ opencv-python
 h5py
 imgaug
 IPython[all]
+torch==1.4.0
+torchvision
+tqdm
+yacs
+pycocotools
+json-tricks
+munkres
+EasyDict==1.7
+Cython
+pandas
+pyyaml
+json_tricks
+tensorboardX
+cffi

@@ -1,10 +1,5 @@
-import numpy as np
 import cv2
-import os
-import sys
-import matplotlib.pyplot as plt
-from process.pose import CVPoseEstimator, PoseGuider, CvClassifier, HumanPose
-from process.object import Object, Human
+from process.object import Human
 import numpy as np
 
 dx = [0, 1, 0, -1]
@@ -94,29 +89,6 @@ def get_contour_center_point(image, threshold):
     return layered_image, cogs
 
 
-def get_golden_ratio_area(image_height, image_width):
-    unit_x = image_width // 8
-    unit_y = image_height // 8
-
-    area_list = list()
-
-    # 좌상단
-    area_list.append((unit_y * 2, unit_x * 2, unit_y * 3, unit_x * 3))
-
-    # 우상단
-    area_list.append((unit_y * 2, unit_x * 5, unit_y * 3, unit_x * 6))
-
-    # 좌하단
-    area_list.append((unit_y * 5, unit_x * 2, unit_y * 6, unit_x * 3))
-
-    # 우하단
-    area_list.append((unit_y * 5, unit_x * 5, unit_y * 6, unit_x * 6))
-
-    # 정중앙
-    area_list.append((unit_y * 3, unit_x * 3, unit_y * 5, unit_x * 5))
-    return area_list
-
-
 def get_iou(rect1, rect2):
     rect1_width = rect1[3] - rect1[1]
     rect1_height = rect1[2] - rect1[0]
@@ -133,81 +105,11 @@ def get_iou(rect1, rect2):
     return intersection_area / rect1_area
 
 
-def get_obj_position_guides(obj, image):
-    image_h, image_w = image.shape[:2]
-    error = image_w // 100
-    guide_message_list = list()
-
-    if obj.is_person():
-        pose_guider = PoseGuider()
-        pose_guide = pose_guider.run(obj, image)
-        if pose_guide:
-            guide_message_list.extend(pose_guide)
-
-    left_side = int(image_w / 3)
-    right_side = int(image_w / 3 * 2)
-    middle_side = int(image_w / 2)
-
-    left_diff = int(np.abs(left_side - obj.center_point[0]))
-    right_diff = int(np.abs(right_side - obj.center_point[0]))
-    middle_diff = int(np.abs(middle_side - obj.center_point[0]))
-
-    golden_ratio_area_list = get_golden_ratio_area(image_h, image_w)
-
-    # for golden_ratio_area in golden_ratio_area_list:
-    #     cv2.rectangle(image, (golden_ratio_area[0], golden_ratio_area[1]), (golden_ratio_area[2], golden_ratio_area[3]), (255, 0, 0))
-
-    if left_diff < right_diff:
-        if left_diff < middle_diff:
-            # 왼쪽에 치우친 경우
-            if left_diff > error:
-                guide_message_list.append(("피사체가 황금비율 영역에 있어야 좋습니다.", (0, left_side - obj.center_point[0])))
-        else:
-            # 중앙에 있는 경우
-            if middle_diff > error:
-                guide_message_list.append(("피사체를 정중앙에 두어 좌우 대칭을 맞춰보세요", (0, middle_side - obj.center_point[0])))
-    else:
-        if right_diff < middle_diff:
-            # 오른쪽에 치우친 경우
-            if right_diff > error:
-                guide_message_list.append(("피사체가 황금비율 영역에 있어야 좋습니다.", (0, right_side - obj.center_point[0])))
-        else:
-            # 중앙에 있는 경우
-            if middle_diff > error:
-                guide_message_list.append(("피사체를 정중앙에 두어 좌우 대칭을 맞춰보세요", (0, middle_side - obj.center_point[0])))
-
-    return guide_message_list
-
-
 def shift_image(image, x, y):
     height, width = image.shape[:2]
     M = np.float32([[1, 0, x], [0, 1, y]])
     dst = cv2.warpAffine(np.float32(image), M, (width, height))
     return dst
-
-
-def get_line_position_guides(line):
-    upper_threshold = 25
-    lower_threshold = 5
-    guide_message_list = list()
-
-    x1 = line[0]
-    y1 = line[1]
-    x2 = line[2]
-    y2 = line[3]
-
-    ydiff = abs(y1 - y2)
-    xdiff = abs(x1 - x2)
-
-    # 수평선 양 끝 점의 차이가 lower_threshold 초과이면 가이드 멘트
-    if upper_threshold > ydiff > lower_threshold:
-        guide_message_list.append("수평을 맞춰주세요")
-
-    # 수직선
-    elif upper_threshold > xdiff > lower_threshold:
-        guide_message_list.append("수직을 맞춰주세요")
-
-    return guide_message_list
 
 
 def get_obj_line_guides(objs, lines, image):
