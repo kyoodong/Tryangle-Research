@@ -1,6 +1,7 @@
-from matplotlib import pyplot as plt
 import numpy as np
 import cv2
+from matplotlib import pyplot as plt
+from matplotlib import patches as patches
 
 def draw_line(src, lines, color=(0, 0, 255), thickness=1):
     '''
@@ -34,7 +35,22 @@ def draw_line_cluster(src, lines, clusters):
 
     return dst
 
-def display(title, image):
+def draw_color(colors):
+    fig, ax = plt.subplots()
+    width = 1 / len(colors)
+    for i, color_p in enumerate(colors):
+        ax.add_patch(
+            patches.Rectangle(
+                (width * i, 0),
+                width, 1,
+                facecolor=color_p / 255,
+                fill=True
+            ))
+
+    plt.xticks([]), plt.yticks([])
+    plt.show()
+
+def display(title, image, vanishing_point=None):
     plt.title(title)
 
     if len(image.shape) <= 2:
@@ -42,6 +58,10 @@ def display(title, image):
     else:
         plt.imshow(image)
     plt.xticks([]), plt.yticks([])
+
+    if vanishing_point is not None:
+        vanishing_point[:2] /= vanishing_point[2]
+        plt.plot(int(vanishing_point[0]), int(vanishing_point[1]), 'go')
 
     plt.show()
 

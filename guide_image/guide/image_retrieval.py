@@ -1,9 +1,7 @@
 import os
 import time
 import math
-import random
 import numpy as np
-import json
 from sklearn.preprocessing import normalize
 import faiss
 
