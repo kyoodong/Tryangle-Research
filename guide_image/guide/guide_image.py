@@ -9,6 +9,14 @@ from skimage import feature, transform
 from matplotlib import pyplot as plt
 from matplotlib import patches as patches
 
+def find_similar_by_color(gi, other_gi, count=3):
+    if count > len(other_gi):
+        count = len(other_gi)
+
+    diff = diff_color(gi, other_gi)
+    diff_arg = np.argsort(diff)
+
+    return diff_arg[:count]
 
 def diff_color(gi, other_gi):
     # 방법 1
