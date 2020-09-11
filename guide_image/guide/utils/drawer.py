@@ -52,26 +52,3 @@ def get_random_color(color_len):
         colors.append(list(np.random.random(size=3) * 255))
 
     return colors
-
-
-
-# 외적
-def c_cross(x1, y1, x2, y2):
-    return x1 * y2 - x2 * y1
-
-# 내적
-def c_dot(x1, y1, x2, y2):
-    return x1 * x2 + y1 * y2
-
-# 부호에 따라 양수 1, 음수 -1, 0은 0
-def sign(a):
-    if a > 0:
-        return 1
-    elif a < 0:
-        return -1
-    else:
-        return 0
-
-# 두 점의 거리 제곱을 반환
-def dst_sqr(x1, y1, x2, y2):
-    return (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)
