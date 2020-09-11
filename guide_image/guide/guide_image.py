@@ -2,30 +2,13 @@
 
 import cv2
 import numpy as np
-import guide.utils
-from guide import ciede2000 as color_diff
+from guide.utils import ciede2000 as color_diff
+from guide.utils import drawer
 
 from skimage import feature, transform
 from matplotlib import pyplot as plt
 from matplotlib import patches as patches
 
-
-def find_similar_by_CBIR(gi, other_gi, count=3):
-
-    return None
-
-def find_similar_by_SIFT(gi, other_gi, count=3):
-
-    return None
-
-def find_similar_by_color(gi, other_gi, count=3):
-    if count > len(other_gi):
-        count = len(other_gi)
-
-    diff = diff_color(gi, other_gi)
-    diff_arg = np.argsort(diff)
-
-    return diff_arg[:count]
 
 def diff_color(gi, other_gi):
     # 방법 1
@@ -46,48 +29,6 @@ def diff_color(gi, other_gi):
 # Guide Image
 ##########################################
 class GuideImage:
-    class ColorCategory:
-        NAMES = [
-            "Yellow",
-            "Yellow_orange",
-            "Orange",
-            "Red_orange",
-            "Red",
-            "Pink",
-            "Red_violet",
-            "Violet",
-            "Blue_violet",
-            "Blue",
-            "Sky",
-            "Blue_green",
-            "Green",
-            "Yellow_green",
-            "White",
-            "Gray",
-            "Brown",
-            "Black",
-        ]
-
-        LIST = [(246, 239, 30),  # Yellow
-                (249, 197, 14),  # Yellow_orange
-                (244, 125, 25),  # Orange
-                (233, 62, 29),  # Red_orange
-                (229, 0, 29),  # Red
-                (253, 181, 211),  # Pink
-                (139, 41, 134),  # Red_violet
-                (100, 27, 128),  # Violet
-                (81, 69, 152),  # Blue_violet
-                (49, 80, 162),  # Blue
-                (135, 198, 228),  # Sky
-                (28, 128, 107),  # Blue_green
-                (45, 170, 64),  # Green
-                (127, 191, 51),  # Yellow_green
-                (255, 255, 255),  # White
-                (186, 186, 186),  # Gray
-                (125, 69, 36),  # Brown
-                (0, 0, 0),  # Black
-                ]
-
     def __init__(self, img):
         if isinstance(img, str):
             img = cv2.imread(img, -1)
@@ -101,8 +42,6 @@ class GuideImage:
         self.vanishing_point = None
         self.__edgelets = None
         self.__lines = None
-
-        # 오브젝트 정보
 
     def compute_info(self, n_color=3, image_processing_size=(32,32)):
         self.__find_vps()
@@ -138,7 +77,7 @@ class GuideImage:
 
         # 이미지의 선을 보여줌
         if lines_vis:
-            only_line = utils.draw_line(np.zeros_like(self.__img), self.__lines, color=(255, 0, 0), thickness=2)
+            only_line = drawer.draw_line(np.zeros_like(self.__img), self.__lines, color=(255, 0, 0), thickness=2)
             plt.imshow(only_line, cmap='gray')
             plt.xticks([]), plt.yticks([])
 
