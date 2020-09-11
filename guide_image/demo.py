@@ -1,7 +1,5 @@
 import numpy as np
 from guide import guide_image as gi
-import guide.utils
-import cv2
 import glob
 
 
