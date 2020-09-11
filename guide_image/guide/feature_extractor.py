@@ -19,7 +19,10 @@ def preprocess(img_path, input_shape):
     return img
 
 
-def extract(image_dataset):
+def extract(image_dataset, store_file="fvecs"):
+    binary_file = f"{store_file}.bin"
+    name_file = f"{store_file}_names.txt"
+
     batch_size = 100
     input_shape = (224, 224, 3)
     base = tf.keras.applications.MobileNetV2(input_shape=input_shape,
@@ -33,7 +36,7 @@ def extract(image_dataset):
     ds = list_ds.map(lambda x: preprocess(x, input_shape), num_parallel_calls=-1)
     dataset = ds.batch(batch_size).prefetch(-1)
 
-    with open('fvecs.bin', 'wb') as f:
+    with open(binary_file, 'wb') as f:
         for batch in dataset:
             fvecs = model.predict(batch)
 
@@ -44,7 +47,7 @@ def extract(image_dataset):
             # struct.pack을 사용하여 패킹한다.
             f.write(struct.pack(fmt, *(fvecs.flatten())))
 
-    with open('fnames.txt', 'w') as f:
+    with open(name_file, 'w') as f:
         f.write('\n'.join(fnames))
 
 
