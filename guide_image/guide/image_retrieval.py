@@ -9,17 +9,16 @@ import faiss
 class ImageRetrieval:
     def __init__(self,
                  fvec_file,
-                 fvec_img_file_name):
+                 fvec_img_file_name,
+                 fvec_dim):
         '''
         :param feature_file: binary형태의 image_feature 파일
         :param feature_file_name: 각 feature에 맞는 이미지 이름 정보
         '''
-        
+
         with open(fvec_img_file_name) as f:
             self.fname = f.readlines()
 
-        #feature dimention
-        dim = 1280
         # indexing 하는 방법
         index_type = 'hnsw'
         # index_type = 'l2'
@@ -28,7 +27,7 @@ class ImageRetrieval:
         index_file = f'{fvec_file}.{index_type}.index'
 
         # 메모리에 모든 정보를 올리면 메모리가 꽉 차니까 np.memmap으로 정보 불러오기
-        fvecs = np.memmap(fvec_file, dtype='float32', mode='r').view('float32').reshape(-1, dim)
+        fvecs = np.memmap(fvec_file, dtype='float32', mode='r').view('float32').reshape(-1, fvec_dim)
 
         self.index = None
         # 인덱스 파일이 있으면 불러오고 없으면 생성
@@ -37,7 +36,7 @@ class ImageRetrieval:
             if index_type == 'hnsw':
                 self.index.hnsw.efSearch = 256
         else:
-            self.index = self.__get_index(index_type, dim)
+            self.index = self.__get_index(index_type, fvec_dim)
             self.index = self.__populate(self.index, fvecs)
             faiss.write_index(self.index, index_file)
         print("index n total", self.index.ntotal)
@@ -49,7 +48,7 @@ class ImageRetrieval:
         :return: k개의 비슷한 이미지의 이미지이름, 거리를 반환해 줌 -> (k, (img_path, dst))
         '''
         dsts, idxs = self.index.search(normalize(query_fvecs), k)
-        
+
         result = []
         for (dst, idx) in zip(dsts[0], idxs[0]):
             result.append((self.fname[idx].strip(), dst))
