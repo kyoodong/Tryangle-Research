@@ -2,8 +2,8 @@ import numpy as np
 import cv2
 import glob
 
-from guide import dominant_color
 from guide.utils import drawer
+from guide import dominant_color
 from guide.vp_detection import find_vps
 
 
@@ -32,7 +32,7 @@ for file in glob.glob("image/similar_test/*.jpg"):
     list_img.append([img, color])
 
 
-similar_img_arg = dominant_color.find_similar_by_color(dominant_colors[0][1], np.array(list_img)[:,1], count=5)
+similar_img_arg = dominant_color.find_similar_by_color(dominant_colors[0][1], np.array(list_img)[:, 1], count=5)
 
 for arg in similar_img_arg:
     drawer.display(f"Result{arg}", list_img[arg][0])

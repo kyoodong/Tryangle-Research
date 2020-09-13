@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
-from guide.utils import ciede2000 as color_diff
+from guide.process import ciede2000 as color_diff
+
 
 def find_similar_by_color(query_color, other_colors, count=3):
     if count > len(other_colors):
