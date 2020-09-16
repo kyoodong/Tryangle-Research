@@ -1,11 +1,12 @@
 
 class Object:
-    def __init__(self, roi, mask, clazz, score, center_point):
+    def __init__(self, roi, mask, clazz, score, center_point, area):
         self.roi = roi
         self.mask = mask
         self.clazz = clazz
         self.score = score
         self.center_point = center_point
+        self.area = area
 
     def is_person(self):
         return self.clazz == 1
@@ -48,7 +49,7 @@ class Human(Object):
                   ["RKnee", "RAnkle"], ["Chest", "LHip"], ["LHip", "LKnee"], ["LKnee", "LAnkle"]]
 
     def __init__(self, obj, pose, pose_class, cropped_image, extended_roi):
-        super(Human, self).__init__(obj.roi, obj.mask, obj.clazz, obj.score, obj.center_point)
+        super(Human, self).__init__(obj.roi, obj.mask, obj.clazz, obj.score, obj.center_point, obj.area)
         self.pose = pose
         self.pose_class = pose_class
         self.cropped_image = cropped_image

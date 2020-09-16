@@ -174,12 +174,6 @@ class Color:
                 self.color_list[index] += 1
                 visual[y][x] = Color.Category.LIST[index]
 
-        plt.subplot(1, 2, 1)
-        plt.imshow(image)
-
-        plt.subplot(1, 2, 2)
-        plt.imshow(visual)
-        plt.show()
         self.color_list = np.array(self.color_list)
 
     def __sub__(self, other):

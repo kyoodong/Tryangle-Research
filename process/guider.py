@@ -95,14 +95,14 @@ class Guider:
         # 객체마다 외곽선만 따도록 수정
         # [image_height][image_width][num_of_obj]
         # 위와 같은 shape 로 이미지가 처리되며 num_of_obj 개수로 나뉜 이미지들을 하나의 이미지로 합쳐야함
-        layered_images, center_points = text_guider.get_contour_center_point(self.r['masks'], 0.01)
+        layered_images, center_points, areas = text_guider.get_contour_center_point(self.r['masks'], 0.01)
 
         for index, center_point in enumerate(center_points):
             if center_point:
                 # roi 를 살짝 넓직하게 잡아야 사람 포즈 인식이 잘됨
                 roi = self.r['rois'][index]
                 obj = Object(roi, self.r['masks'][index], self.r['class_ids'][index], self.r['scores'][index],
-                             center_point)
+                             center_point, areas[index])
                 if obj.is_person():
                     # 사진 내 여러 사람이 있을 수 있으므로 해당 객체만을 오려내서 pose estimation 을 돌림
                     d = 30
