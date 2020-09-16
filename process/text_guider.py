@@ -18,7 +18,7 @@ def __get_contour_center_point(image, x, y, visits, threshold):
     queue.append((y, x))
     visits[y][x] = True
 
-    count = 1
+    area = 1
 
     # 무게 중심 변수
     contour = list()
@@ -40,7 +40,7 @@ def __get_contour_center_point(image, x, y, visits, threshold):
             if image[Y][X]:
                 if not visits[Y][X]:
                     visits[Y][X] = True
-                    count += 1
+                    area += 1
                     queue.append((Y, X))
 
                     # 질량 중심을 구하기 위한 각 좌표 합
@@ -52,17 +52,17 @@ def __get_contour_center_point(image, x, y, visits, threshold):
                 contour.append((Y, X))
                 layered_image[Y][X] = 1
     total = image.shape[0] * image.shape[1]
-    if count > total * threshold:
+    if area > total * threshold:
         ### 무게 중심
         # M = cv2.moments(np.array(contour))
         # cx = int(M['m10'] / M['m00'])
         # cy = int(M['m01'] / M['m00'])
 
         ### 질량 중심
-        cx = int(x_sum / count)
-        cy = int(y_sum / count)
-        return layered_image, (cx, cy)
-    return np.zeros_like(layered_image), None
+        cx = int(x_sum / area)
+        cy = int(y_sum / area)
+        return layered_image, (cx, cy), area
+    return np.zeros_like(layered_image), None, 0
 
 
 # 외곽선 + 오브젝트의 무게중심을 구해주는 함수
@@ -72,6 +72,7 @@ def get_contour_center_point(image, threshold):
     width = image.shape[1]
     layered_image = np.zeros_like(image)
     cogs = list()
+    areas = list()
     for i in range(channels):
         visits = np.zeros_like(image[:, :, i])
         is_finish = False
@@ -79,14 +80,15 @@ def get_contour_center_point(image, threshold):
             for w in range(width):
                 if image[h][w][i] and not visits[h][w]:
                     # bfs 를 돌려서 외곽선 탐색
-                    l, cog = __get_contour_center_point(image[:, :, i], w, h, visits, threshold)
+                    l, cog, area = __get_contour_center_point(image[:, :, i], w, h, visits, threshold)
                     layered_image[:, :, i] += l
                     cogs.append(cog)
+                    areas.append(area)
                     is_finish = True
                     break
             if is_finish:
                 break
-    return layered_image, cogs
+    return layered_image, cogs, areas
 
 
 def get_iou(rect1, rect2):
