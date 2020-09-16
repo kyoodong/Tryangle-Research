@@ -194,11 +194,11 @@ def find_dominant_colors(image):
     return color.get_dominant_colors()
 
 
-pallet = np.zeros([0, 150, 3], dtype=np.int32)
-for i in range(len(Color.Category.LIST)):
-    img = np.zeros([20, 150, 3], dtype=np.int32)
-    img += Color.Category.LIST[i]
-    pallet = np.vstack([pallet, img])
-
-plt.imshow(pallet)
-plt.show()
+# pallet = np.zeros([0, 150, 3], dtype=np.int32)
+# for i in range(len(Color.Category.LIST)):
+#     img = np.zeros([20, 150, 3], dtype=np.int32)
+#     img += Color.Category.LIST[i]
+#     pallet = np.vstack([pallet, img])
+#
+# plt.imshow(pallet)
+# plt.show()
