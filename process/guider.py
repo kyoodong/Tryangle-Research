@@ -26,7 +26,7 @@ class ObjectComponent(Component):
         self.object = object
 
 
-class Guide():
+class Guide:
     def __init__(self, object_id, guide_id):
         self.object_id = object_id
         self.guide_id = guide_id
@@ -50,11 +50,10 @@ class LineGuide(Guide):
 
 
 class ObjectGuide(Guide):
-    def __init__(self, object_id, guide_id, diff_x, diff_y, object_class):
+    def __init__(self, object_id, guide_id, diff_x, diff_y):
         super(ObjectGuide, self).__init__(object_id, guide_id)
         self.diff_x = diff_x
         self.diff_y = diff_y
-        self.object_class = object_class
 
     def __str__(self):
         return "{{'ObjectGuide':{}}}".format(str(self.__dict__))
@@ -89,7 +88,8 @@ class Guider:
         self.get_effective_line_and_guide()
 
         for component in self.component_list:
-            self.get_obj_position_guides(component)
+            if isinstance(component, ObjectComponent):
+                self.get_obj_position_guides(component)
 
     def get_object_and_guide(self):
         # 객체마다 외곽선만 따도록 수정
@@ -157,6 +157,7 @@ class Guider:
         if effective_lines:
             for line in effective_lines:
                 line_component = LineComponent(len(self.component_list), line)
+                self.component_list.append(line_component)
                 self.get_line_position_guides(line_component)
 
     def get_golden_ratio_area(self):
@@ -210,20 +211,20 @@ class Guider:
             if left_diff < middle_diff:
                 # 왼쪽에 치우친 경우
                 if left_diff > error:
-                    self.guide_list[5].append(ObjectGuide(obj_component.id, 5, 0, left_side - obj.center_point[0], obj.clazz))
+                    self.guide_list[5].append(ObjectGuide(obj_component.id, 5, 0, left_side - obj.center_point[0]))
             else:
                 # 중앙에 있는 경우
                 if middle_diff > error:
-                    self.guide_list[4].append(ObjectGuide(obj_component.id, 4, 0, middle_side - obj.center_point[0], obj.clazz))
+                    self.guide_list[4].append(ObjectGuide(obj_component.id, 4, 0, middle_side - obj.center_point[0]))
         else:
             if right_diff < middle_diff:
                 # 오른쪽에 치우친 경우
                 if right_diff > error:
-                    self.guide_list[5].append(ObjectGuide(obj_component.id, 5, 0, right_side - obj.center_point[0], obj.clazz))
+                    self.guide_list[5].append(ObjectGuide(obj_component.id, 5, 0, right_side - obj.center_point[0]))
             else:
                 # 중앙에 있는 경우
                 if middle_diff > error:
-                    self.guide_list[4].append(ObjectGuide(obj_component.id, 4, 0, middle_side - obj.center_point[0], obj.clazz))
+                    self.guide_list[4].append(ObjectGuide(obj_component.id, 4, 0, middle_side - obj.center_point[0]))
 
 
 class PoseGuider:
@@ -287,7 +288,7 @@ class PoseGuider:
                         self.human.pose[Human.BODY_PARTS[Human.Part.RKnee]][2] > HumanPose.POSE_THRESHOLD:
                     human_height = self.human[2] - self.human[0]
                     diff = -human_height * 10 / 170
-                    guide_message_list.append(ObjectGuide(self.human_component.id, 3, diff, 0, self.human_component.object.clazz))
+                    guide_message_list.append(ObjectGuide(self.human_component.id, 3, diff, 0))
 
                 # 무릎이 잘린 경우
                 if self.human.pose[Human.BODY_PARTS[Human.Part.LKnee]][2] <= HumanPose.POSE_THRESHOLD or\
@@ -295,18 +296,18 @@ class PoseGuider:
                     human_height = self.human[2] - self.human[0]
                     diff = human_height * 20 / 170
                     guide_message_list.append(
-                        ObjectGuide(self.human_component.id, 7, diff, 0, self.human_component.object.clazz))
+                        ObjectGuide(self.human_component.id, 7, diff, 0))
 
                 if self.has_head():
                     if not self.has_body():
                         human_height = self.human[2] - self.human[0]
                         diff = -human_height * 20 / 170
                         guide_message_list.append(
-                            ObjectGuide(self.human_component.id, 8, diff, 0, self.human_component.object.clazz))
+                            ObjectGuide(self.human_component.id, 8, diff, 0))
 
             if height > self.human.roi[2] + self.foot_lower_threshold:
                 guide_message_list.append(
-                    ObjectGuide(self.human_component.id, 2, height - self.human.roi[2] + self.foot_lower_threshold, 0, self.human_component.object.clazz))
+                    ObjectGuide(self.human_component.id, 2, height - self.human.roi[2] + self.foot_lower_threshold, 0))
 
             # 사람이 사진의 윗쪽에 위치한 경우
             if self.human.roi[0] < gamma:
@@ -315,6 +316,6 @@ class PoseGuider:
                     top = height // 3
                     diff = top - self.human.roi[0]
                     guide_message_list.append(
-                        ObjectGuide(self.human_component.id, 9, diff, 0, self.human_component.object.clazz))
+                        ObjectGuide(self.human_component.id, 9, diff, 0))
 
         return guide_message_list
