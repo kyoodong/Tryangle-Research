@@ -2,7 +2,9 @@ import os
 import sys
 import cv2
 import numpy as np
+import process.segmentation as segmentation
 from process.segmentation import MaskRCNN
+from mrcnn import visualize
 
 
 mask_rcnn = MaskRCNN()
@@ -31,4 +33,6 @@ def segment(image):
     # Run detection
     results = mask_rcnn.detect(image)
     r = results[0]
+    visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'],
+                                segmentation.class_names, r['scores'])
     return r
