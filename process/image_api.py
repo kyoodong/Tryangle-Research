@@ -1,11 +1,9 @@
-import os
-import sys
 import cv2
 import numpy as np
-import process.segmentation as segmentation
-from process.segmentation import MaskRCNN
-from mrcnn import visualize
 
+import process.segmentation as segmentation
+from mrcnn import visualize
+from process.segmentation import MaskRCNN
 
 mask_rcnn = MaskRCNN()
 

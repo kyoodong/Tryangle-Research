@@ -1,6 +1,7 @@
 import os
 import sys
 import tensorflow as tf
+import threading
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
@@ -63,9 +64,16 @@ class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
                'teddy bear', 'hair drier', 'toothbrush', 'sky', 'sea', 'ground']
 
 
+lock = threading.Lock()
+
+
 class MaskRCNN:
     def detect(self, image):
-        with session.as_default():
-            with session.graph.as_default():
-                model.keras_model._make_predict_function()
-                return model.detect([image], verbose=1)
+        lock.acquire()
+        try:
+            with session.as_default():
+                with session.graph.as_default():
+                    model.keras_model._make_predict_function()
+                    return model.detect([image], verbose=1)
+        finally:
+            lock.release()
