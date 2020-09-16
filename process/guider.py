@@ -19,6 +19,12 @@ class LineComponent(Component):
         super(LineComponent, self).__init__(id)
         self.line = line
 
+    def __str__(self):
+        return "{{'LineComponent':{}}}".format(str(self.__dict__))
+
+    def __repr__(self):
+        return self.__str__()
+
 
 class ObjectComponent(Component):
     def __init__(self, id, object):
@@ -286,21 +292,21 @@ class PoseGuider:
                     self.human.pose[Human.BODY_PARTS[Human.Part.RAnkle]][2] <= HumanPose.POSE_THRESHOLD and\
                         self.human.pose[Human.BODY_PARTS[Human.Part.LKnee]][2] > HumanPose.POSE_THRESHOLD and\
                         self.human.pose[Human.BODY_PARTS[Human.Part.RKnee]][2] > HumanPose.POSE_THRESHOLD:
-                    human_height = self.human[2] - self.human[0]
+                    human_height = self.human.roi[2] - self.human.roi[0]
                     diff = -human_height * 10 / 170
                     guide_message_list.append(ObjectGuide(self.human_component.id, 3, diff, 0))
 
                 # 무릎이 잘린 경우
                 if self.human.pose[Human.BODY_PARTS[Human.Part.LKnee]][2] <= HumanPose.POSE_THRESHOLD or\
                         self.human.pose[Human.BODY_PARTS[Human.Part.RKnee]][2] <= HumanPose.POSE_THRESHOLD:
-                    human_height = self.human[2] - self.human[0]
+                    human_height = self.human.roi[2] - self.human.roi[0]
                     diff = human_height * 20 / 170
                     guide_message_list.append(
                         ObjectGuide(self.human_component.id, 7, diff, 0))
 
                 if self.has_head():
                     if not self.has_body():
-                        human_height = self.human[2] - self.human[0]
+                        human_height = self.human.roi[2] - self.human.roi[0]
                         diff = -human_height * 20 / 170
                         guide_message_list.append(
                             ObjectGuide(self.human_component.id, 8, diff, 0))
