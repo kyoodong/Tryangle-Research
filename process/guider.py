@@ -4,9 +4,14 @@ import copy
 import process.image_api as api
 import numpy as np
 from process.pose import CVPoseEstimator, CvClassifier, HumanPose
+import time
 
 cv_estimator = CVPoseEstimator()
 pose_classifier = CvClassifier()
+
+
+def get_time():
+    return int(round(time.time() * 1000))
 
 
 class Component:
@@ -89,19 +94,37 @@ class Guider:
         for guide in range(len(Guider.guide_list)):
             self.guide_list.append([])
 
+        now = get_time()
         self.r = api.segment(image)
-        self.get_object_and_guide()
-        self.get_effective_line_and_guide()
+        diff_time = get_time() - now
+        print('segmentation time : ', diff_time)
 
+        now = get_time()
+        self.get_object_and_guide()
+        diff_time = get_time() - now
+        print('get_object_and_guide time : ', diff_time)
+
+        now = get_time()
+        self.get_effective_line_and_guide()
+        diff_time = get_time() - now
+        print('get_effective_line_and_guide time : ', diff_time)
+
+        now = get_time()
         for component in self.component_list:
             if isinstance(component, ObjectComponent):
                 self.get_obj_position_guides(component)
+
+        diff_time = get_time() - now
+        print('get_obj_position_guides time : ', diff_time)
 
     def get_object_and_guide(self):
         # 객체마다 외곽선만 따도록 수정
         # [image_height][image_width][num_of_obj]
         # 위와 같은 shape 로 이미지가 처리되며 num_of_obj 개수로 나뉜 이미지들을 하나의 이미지로 합쳐야함
+        now = get_time()
         layered_images, center_points, areas = text_guider.get_contour_center_point(self.r['masks'], 0.01)
+        diff = get_time() - now
+        print("\tget_contour_center_point time ", diff)
 
         for index, center_point in enumerate(center_points):
             if center_point:
@@ -128,9 +151,15 @@ class Guider:
                     cropped_image = self.image[roi[0]: roi[2], roi[1]:roi[3]]
 
                     # 포즈 추정
+                    now = get_time()
                     pose = cv_estimator.inference(cropped_image)
+                    diff = get_time() - now
+                    print("\tpose_estimation time ", diff)
                     if pose is not None:
+                        now = get_time()
                         pose_class = pose_classifier.run(pose)
+                        diff = get_time() - now
+                        print("\tpose classify time ", diff)
                         obj = Human(obj, pose, pose_class, cropped_image, roi)
 
                 obj_component = ObjectComponent(len(self.component_list), obj)

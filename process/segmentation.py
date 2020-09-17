@@ -2,6 +2,7 @@ import os
 import sys
 import tensorflow as tf
 import threading
+import gc
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
@@ -77,3 +78,4 @@ class MaskRCNN:
                     return model.detect([image], verbose=1)
         finally:
             lock.release()
+            gc.collect()

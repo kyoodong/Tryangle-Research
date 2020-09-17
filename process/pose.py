@@ -173,21 +173,6 @@ class CVPoseEstimator:
                 return None
 
             max_index = np.argmax(scores)
-
-            # Visualization
-            # result_image = copy.copy(image)
-            # for key in Human.BODY_PARTS.keys():
-            #     result = final_results[max_index][Human.BODY_PARTS[key]]
-            #     if result[2] > POSE_THRESHOLD:
-            #         cv2.circle(result_image, (result[0], result[1]), 4, (255, 0, 0))
-            #         cv2.putText(result_image, key, (result[0], result[1]), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 255, 255),
-            #                     1)
-            #
-            # plt.subplot(1, 2, 1)
-            # plt.imshow(image)
-            # plt.subplot(1, 2, 2)
-            # plt.imshow(result_image)
-            # plt.show()
             return final_results[max_index][:, :3]
 
 
