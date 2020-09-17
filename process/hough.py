@@ -70,7 +70,6 @@ def find_hough_line(image):
 
     count = 0
     for cluster in clusters:
-        print(cluster.get_score())
         x1, x2 = cluster.get_mean_x()
         y1, y2 = cluster.get_mean_y()
         result.append([x1, y1, x2, y2])
