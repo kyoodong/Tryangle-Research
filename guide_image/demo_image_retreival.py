@@ -32,8 +32,8 @@ def retrieval_res(image_path):
     st = time.time()
     # 이미지 검색 클래스 생성
     # fvecs.bin랑 fnames.txt는 feature_extractor.py에서 만들 수 있는 파일
-    imageRetrieval = ImageRetrieval(fvec_file="guide/fvecs.bin",
-                                    fvec_img_file_name="guide/fvecs_names.txt",
+    imageRetrieval = ImageRetrieval(fvec_file="retrieval/fvecs.bin",
+                                    fvec_img_file_name="retrieval/fvecs_names.txt",
                                     fvec_dim=dim)
 
     results = imageRetrieval.search(fvec)
