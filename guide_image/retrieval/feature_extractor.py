@@ -20,7 +20,7 @@ def preprocess(img_path, input_shape=None):
     img = tf.keras.applications.mobilenet_v2.preprocess_input(img)
     return img
 
-def extract_res(image_dataset, store_folder="features", store_file="fvecs"):
+def extract(image_dataset, store_folder="features", store_file="fvecs"):
 
     if not os.path.exists(store_folder):
         os.mkdir(store_folder)
@@ -70,4 +70,4 @@ if __name__ == '__main__':
                         help='Features and Image Path store File')
     args = parser.parse_args()
 
-    extract_res(args.dataset, args.directory, store_file=args.store)
+    extract(args.dataset, args.directory, store_file=args.store)
