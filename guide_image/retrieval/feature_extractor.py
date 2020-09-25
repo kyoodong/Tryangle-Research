@@ -2,6 +2,7 @@ import struct
 import glob
 import numpy as np
 import os
+import tensorflow_hub as hub
 
 import tensorflow as tf
 import tensorflow.keras.layers as layers
@@ -20,18 +21,17 @@ def preprocess(img_path, input_shape=None):
     img = tf.keras.applications.mobilenet_v2.preprocess_input(img)
     return img
 
-def extract(image_dataset, store_folder="features", store_file="fvecs"):
-
-    if not os.path.exists(store_folder):
-        os.mkdir(store_folder)
-    binary_file = f"{store_folder}/{store_file}.bin"
-    name_file = f"{store_folder}/{store_file}_names.txt"
+def extract(image_dataset, store_dir="features", store_file="fvecs"):
+    if not os.path.exists(store_dir):
+        os.mkdir(store_dir)
+    binary_file = f"{store_dir}/{store_file}.bin"
+    name_file = f"{store_dir}/{store_file}_names.txt"
 
     batch_size = 100
     input_shape = (224, 224, 3)
     base = tf.keras.applications.MobileNetV2(input_shape=input_shape,
-                                           include_top=False,
-                                           weights='imagenet')
+                                             include_top=False,
+                                             weights='imagenet')
     base.trainable = False
     model = Model(inputs=base.input, outputs=layers.GlobalAveragePooling2D()(base.output))
 
@@ -56,6 +56,7 @@ def extract(image_dataset, store_folder="features", store_file="fvecs"):
     with open(name_file, 'w') as f:
         f.write('\n'.join(fnames))
 
+
 if __name__ == '__main__':
     import argparse
 
@@ -70,4 +71,6 @@ if __name__ == '__main__':
                         help='Features and Image Path store File')
     args = parser.parse_args()
 
-    extract(args.dataset, args.directory, store_file=args.store)
+    extract(image_dataset=args.dataset,
+            store_dir=args.directory,
+            store_file=args.store)
