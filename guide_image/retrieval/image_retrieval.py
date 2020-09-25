@@ -8,20 +8,28 @@ import faiss
 
 class ImageRetrieval:
     def __init__(self,
-                 fvec_file,
-                 fvec_img_file_name,
-                 fvec_dim):
+                 fvec_file: str,
+                 fvec_img_file_name: str,
+                 fvec_dim: int,
+                 index_type='hnsw'):
         '''
-        :param feature_file: binary형태의 image_feature 파일
-        :param feature_file_name: 각 feature에 맞는 이미지 이름 정보
+        :param fvec_file: binary형태의 image_feature 파일
+        :param fvec_img_file_name: 각 feature에 맞는 이미지 이름 정보
+        :param fvec_dim: feature vector의 dimention 크기
+        :param index_type: indexing하는 방법, ( hnsw, l2, IVFFlat, IVFPQ)
+
+        ----------------------------------------------
+        약 10만장 기준으로 해본 결과
+        hnsw    | sec: 0.0054초 정도 | mem: 975KB 정도
+        l2      | sec: 0.0398초 정도 | mem: 945KB 정도
+        IVFFlat | sec: 0.0036초 정도 | mem: 943KB 정도
+        IVFPQ   | sec: 0.0029초 정도 | mem: 455KB 정도
+        ----------------------------------------------
+
         '''
 
         with open(fvec_img_file_name) as f:
             self.fname = f.readlines()
-
-        # indexing 하는 방법
-        index_type = 'hnsw'
-        # index_type = 'l2'
 
         # index file name
         index_file = f'{fvec_file}.{index_type}.index'
@@ -37,9 +45,12 @@ class ImageRetrieval:
                 self.index.hnsw.efSearch = 256
         else:
             self.index = self.__get_index(index_type, fvec_dim)
+            if index_type == 'IVFFlat' or index_type == 'IVFPQ':
+                self.index = self.__train(self.index, fvecs)
             self.index = self.__populate(self.index, fvecs)
             faiss.write_index(self.index, index_file)
-        print("index n total", self.index.ntotal)
+        print(f"[INFO]index n total {self.index.ntotal}")
+        print(f"[INFO]index type: {index_type}")
 
     def search(self, query_fvecs, k=10):
         '''
@@ -63,13 +74,31 @@ class ImageRetrieval:
             return index
         elif index_type == 'l2':
             return faiss.IndexFlatL2(dim)
+        elif index_type == 'IVFFlat':
+            nlist = 100
+            quantizer = faiss.IndexFlatL2(dim)  # the other index
+            index = faiss.IndexIVFFlat(quantizer, dim, nlist)
+            return index
+        elif index_type == 'IVFPQ':
+            nlist = 100
+            m = 8
+            quantizer = faiss.IndexFlatL2(dim)  # the other index
+            index = faiss.IndexIVFPQ(quantizer, dim, nlist, m, 8)
+            return index
         raise
 
     def __populate(self, index, fvecs, batch_size=1000):
-        nloop = math.ceil(fvecs.shape[0] / batch_size)
-        for n in range(nloop):
-            s = time.time()
-            index.add(normalize(fvecs[n * batch_size: min((n + 1) * batch_size, fvecs.shape[0])]))
-            print(n * batch_size, time.time() - s)
+        index.add(normalize(fvecs))
+        # nloop = math.ceil(fvecs.shape[0] / batch_size)
+        # for n in range(nloop):
+        #     s = time.time()
+        #     index.add(normalize(fvecs[n * batch_size: min((n + 1) * batch_size, fvecs.shape[0])]))
+        #     print(n * batch_size, time.time() - s)
 
+        return index
+
+    def __train(self, index, fvecs):
+        assert not index.is_trained
+        index.train(normalize(fvecs))
+        assert index.is_trained
         return index
