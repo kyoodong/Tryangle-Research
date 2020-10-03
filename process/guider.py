@@ -99,23 +99,23 @@ class Guider:
         diff_time = get_time() - now
         print('segmentation time : ', diff_time)
 
-        now = get_time()
-        self.get_object_and_guide()
-        diff_time = get_time() - now
-        print('get_object_and_guide time : ', diff_time)
-
-        now = get_time()
-        self.get_effective_line_and_guide()
-        diff_time = get_time() - now
-        print('get_effective_line_and_guide time : ', diff_time)
-
-        now = get_time()
-        for component in self.component_list:
-            if isinstance(component, ObjectComponent):
-                self.get_obj_position_guides(component)
-
-        diff_time = get_time() - now
-        print('get_obj_position_guides time : ', diff_time)
+        # now = get_time()
+        # self.get_object_and_guide()
+        # diff_time = get_time() - now
+        # print('get_object_and_guide time : ', diff_time)
+        #
+        # now = get_time()
+        # self.get_effective_line_and_guide()
+        # diff_time = get_time() - now
+        # print('get_effective_line_and_guide time : ', diff_time)
+        #
+        # now = get_time()
+        # for component in self.component_list:
+        #     if isinstance(component, ObjectComponent):
+        #         self.get_obj_position_guides(component)
+        #
+        # diff_time = get_time() - now
+        # print('get_obj_position_guides time : ', diff_time)
 
     def get_object_and_guide(self):
         # 객체마다 외곽선만 따도록 수정
