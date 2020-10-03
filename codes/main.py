@@ -17,4 +17,4 @@ while True:
 
     # r = api.segment(image)
     guider = Guider(image)
-    print(guider.guide_list)
+    print(str(guider))
