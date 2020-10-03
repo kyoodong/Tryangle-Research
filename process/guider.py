@@ -130,7 +130,7 @@ class Guider:
             if center_point:
                 # roi 를 살짝 넓직하게 잡아야 사람 포즈 인식이 잘됨
                 roi = self.r['rois'][index]
-                obj = Object(roi, self.r['masks'][:,:,index], self.r['class_ids'][index], self.r['scores'][index],
+                obj = Object(roi, self.r['masks'][:, :, index], self.r['class_ids'][index], self.r['scores'][index],
                              center_point, areas[index])
                 if obj.is_person():
                     # 사진 내 여러 사람이 있을 수 있으므로 해당 객체만을 오려내서 pose estimation 을 돌림
