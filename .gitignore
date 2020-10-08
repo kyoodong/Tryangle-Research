@@ -211,7 +211,7 @@ gradle-app.setting
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,windows,intellij,java,gradle,maven
 
-# ÀÌ¹ÌÁö ÆÄÀÏ
+# ï¿½Ì¹ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 InstagramCrolling/images/**
 <<<<<<< HEAD
 
@@ -482,69 +482,6 @@ dmypy.json
 
 # End of https://www.toptal.com/developers/gitignore/api/pycharm,python
 */.idea/**
-MaskRcnn/datas
-MaskRcnn/datas/**
-
-
-# Data files and directories common in repo root
-akwelv_mask_rcnn/datasets/
-akwelv_mask_rcnn/logs/
-akwelv_mask_rcnn/*.h5
-akwelv_mask_rcnn/results/
-akwelv_mask_rcnn/temp/
-akwelv_mask_rcnn/test/
-
-# Byte-compiled / optimized / DLL files
-akwelv_mask_rcnn/__pycache__/
-akwelv_mask_rcnn/*.py[cod]
-akwelv_mask_rcnn/*$py.class
-
-# Distribution / packaging
-akwelv_mask_rcnn/.Python
-akwelv_mask_rcnn/env/
-akwelv_mask_rcnn/build/
-akwelv_mask_rcnn/develop-eggs/
-akwelv_mask_rcnn/dist/
-akwelv_mask_rcnn/downloads/
-akwelv_mask_rcnn/eggs/
-akwelv_mask_rcnn/.eggs/
-akwelv_mask_rcnn/lib/
-akwelv_mask_rcnn/lib64/
-akwelv_mask_rcnn/parts/
-akwelv_mask_rcnn/sdist/
-akwelv_mask_rcnn/var/
-akwelv_mask_rcnn/wheels/
-akwelv_mask_rcnn/*.egg-info/
-akwelv_mask_rcnn/.installed.cfg
-akwelv_mask_rcnn/*.egg
-
-# Installer logs
-akwelv_mask_rcnn/pip-log.txt
-akwelv_mask_rcnn/pip-delete-this-directory.txt
-
-# VS Studio Code
-akwelv_mask_rcnn/.vscode
-
-# PyCharm
-akwelv_mask_rcnn/.idea/
-
-# Dropbox
-akwelv_mask_rcnn/.dropbox.attr
-
-# Jupyter Notebook
-akwelv_mask_rcnn/.ipynb_checkpoints
-
-# pyenv
-akwelv_mask_rcnn/.python-version
-
-# dotenv
-akwelv_mask_rcnn/.env
-
-# virtualenv
-akwelv_mask_rcnn/.venv
-akwelv_mask_rcnn/venv/
-akwelv_mask_rcnn/ENV/
-
 
 */.idea/
 *.h5
@@ -553,5 +490,8 @@ akwelv_mask_rcnn/ENV/
 **/datasets/**
 DataFormatConverter/*.json
 
-aktwelve_mask_rcnn/logs/
-aktwelve_mask_rcnn/codes/coco/dataset/
+logs/
+codes/coco/dataset/
+
+human_pose/models
+

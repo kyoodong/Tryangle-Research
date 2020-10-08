@@ -1,4 +1,7 @@
 # 곰손 카메라 이미지 처리 모듈
+#Requirement
+- Python 3.7
+
 ## DataFormatConverter
 skyfinder, ade20k 데이터 셋을 coco 데이터 셋으로 변환하기 위한 프로젝트  
 ### 필요 데이터
