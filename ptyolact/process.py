@@ -6,13 +6,15 @@ import numpy as np
 
 import torch
 import torch.backends.cudnn as cudnn
+import torch.nn.functional as F
 
 from ptyolact.yolact import Yolact
 from ptyolact.data import COLORS
 from ptyolact.utils.augmentations import FastBaseTransform
 from ptyolact.layers.output_utils import postprocess, undo_image_transformation
 from ptyolact.utils import timer
-from ptyolact.data import cfg
+from ptyolact.utils.functions import SavePath
+from ptyolact.data import cfg, set_cfg
 
 color_cache = defaultdict(lambda: {})
 
@@ -176,7 +178,7 @@ def evalimage(net:Yolact, path:str, save_path:str=None):
     cfg.mask_proto_debug = False
 
     img = cv2.imread(path)
-    frame = torch.from_numpy(img).cuda().float()
+    frame = torch.from_numpy(img).float()
     batch = FastBaseTransform()(frame.unsqueeze(0))
 
     st = time.time()
@@ -214,11 +216,21 @@ def evalimage(net:Yolact, path:str, save_path:str=None):
         cv2.imwrite(save_path, img_numpy)
 
 
-def detect(net:Yolact, path:str, top_k:int=5):
+def detect(net:Yolact, path:str, top_k:int=5, cuda:bool=True):
+    """
+
+    :param net: Yolact 모델
+    :param path: 이미지 경로
+    :param top_k: detection된 정보 중 score기반으로 상위 몇 개를 선택할지
+
+    :return: classes, scores, boxes, masks, p3_out(이미지 검색에 사용되는 feature map)
+    """
 
     # 이미지 불러오기
     img = cv2.imread(path)
-    frame = torch.from_numpy(img).cuda().float()
+    frame = torch.from_numpy(img).float()
+    if cuda:
+        frame = frame.cuda()
     batch = FastBaseTransform()(frame.unsqueeze(0))
 
     # YOLACT 실행
@@ -226,38 +238,55 @@ def detect(net:Yolact, path:str, top_k:int=5):
     det_outs = net(batch)
     print(f"[INFO] YOLACT prediction time: {time.time() - st}")
 
+    # 이미지 검색을 위한 feature 처리
+    fpn_feature = det_outs[0]['detection']['fpn_feature']
+    global_avg_pool_out = F.adaptive_avg_pool2d(fpn_feature, (1, 1))
+    global_avg_pool_out = global_avg_pool_out.view(1, global_avg_pool_out.size(1))
+
     # YOLACT output 데이터 후처리
     # YOLACT에서 나온 값들은 바로 사용할 수가 없음
     # 특히 masks 값의 경우 coefficient값이기 때문에 후처리를 통해
     # 사용가능한 mask 형태로 바꿔줘야 함
     h, w, _ = frame.shape
-    save = cfg.rescore_bbox
-    cfg.rescore_bbox = True
-    # postprocess output -> classes, scores, boxes, masks
-    t = postprocess(det_outs, w, h,
-                    visualize_lincomb=False,
-                    crop_masks=True,
-                    score_threshold=0.1)
-    cfg.rescore_bbox = save
 
-    # top_k개만 추출
-    idx = t[1].argsort(0, descending=True)[:top_k]
-    masks = t[3][idx].cpu().numpy()
-    classes, scores, boxes = [x[idx].cpu().numpy() for x in t[:3]]
+    with timer.env('Postprocess'):
+        save = cfg.rescore_bbox
+        cfg.rescore_bbox = True
+        # postprocess output -> classes, scores, boxes, masks
+        t = postprocess(det_outs, w, h,
+                        visualize_lincomb=False,
+                        crop_masks=True,
+                        score_threshold=0.1)
+        cfg.rescore_bbox = save
 
-    return classes, scores, boxes, masks
+
+    with timer.env('Copy'):
+        # top_k개만 추출
+        idx = t[1].argsort(0, descending=True)[:top_k]
+        masks = t[3][idx].cpu().numpy()
+        classes, scores, boxes = [x[idx].cpu().numpy() for x in t[:3]]
+
+    return classes, scores, boxes, masks, global_avg_pool_out
 
 if __name__ == "__main__":
+
     import os
     image_path = '../images/test12.jpg'
+    trained_model = 'weights/yolact_base_54_800000.pth'
     if not os.path.exists(image_path):
         print(f"doesn't exist {image_path}")
         exit()
 
-    cuda = True
+    # model_path = SavePath.from_str(trained_model)
+    # config = model_path.model_name + '_config'
+    # print(f'Config not specified. Parsed {config} from the file name.')
+    # set_cfg(config)
+
+    # GPU 사용 여부
+    cuda = False
     print('Loading model... ', end='')
     net = Yolact()
-    net.load_weights('weights/yolact_base_54_800000.pth')
+    net.load_weights(trained_model)
     net.eval()
     print(' Done.')
 
@@ -278,6 +307,26 @@ if __name__ == "__main__":
         net = net.cuda()
 
     with torch.no_grad():
-        evalimage(net, image_path)
+        # 이미지에 Yolact 결과를 출력하는 부분
+        # evalimage(net, image_path)
+
+        # mask 부분만 따로 보는 코드
+        classes, scores, boxes, masks, fpn_feature = detect(net, image_path, cuda=cuda)
+
+        plt.imshow(cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB))
+        plt.title("Query")
+        plt.show()
+        for i in range(classes.shape[0]):
+            _class = cfg.dataset.class_names[classes[i]]
+            x1, y1, x2, y2 = boxes[i]
+            _mask = np.zeros_like(masks[i])
+            # _mask[y1:y2, x1:x2] = masks[i, y1:y2, x1:x2]
+
+            plt.imshow(masks[i], cmap='gray')
+            plt.title(_class)
+            plt.show()
+
+        # 소모된 시간
+        timer.print_stats()
 
 

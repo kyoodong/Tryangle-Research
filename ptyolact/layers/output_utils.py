@@ -43,7 +43,7 @@ def postprocess(det_output, w, h, batch_idx=0, interpolation_mode='bilinear',
         keep = dets['score'] > score_threshold
 
         for k in dets:
-            if k != 'proto':
+            if k != 'proto' and k != 'fpn_feature':
                 dets[k] = dets[k][keep]
         
         if dets['score'].size(0) == 0:

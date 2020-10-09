@@ -71,6 +71,7 @@ class Detect(object):
                 result = self.detect(batch_idx, conf_preds, decoded_boxes, mask_data, inst_data)
 
                 if result is not None and proto_data is not None:
+                    result['fpn_feature'] = predictions['fpn_feature']
                     result['proto'] = proto_data[batch_idx]
 
                 out.append({'detection': result, 'net': net})
