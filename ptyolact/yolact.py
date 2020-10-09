@@ -673,6 +673,8 @@ class Yolact(nn.Module):
                 else:
                     pred_outs['conf'] = F.softmax(pred_outs['conf'], -1)
 
+            pred_outs['fpn_feature'] = outs[self.proto_src]
+
             return self.detect(pred_outs, self)
 
 
