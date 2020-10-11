@@ -80,7 +80,7 @@
 
 # *.iml
 # modules.xml
-# .idea/misc.xml
+.idea/misc.xml
 # *.ipr
 
 # Sonarlint plugin
@@ -213,11 +213,7 @@ gradle-app.setting
 
 # �̹��� ����
 InstagramCrolling/images/**
-<<<<<<< HEAD
-
-=======
 InstagramCrolling/instaAccount.properties
->>>>>>> feature/maskrcnn
 
 
 
@@ -229,22 +225,6 @@ InstagramCrolling/instaAccount.properties
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
 
 # User-specific stuff
-<<<<<<< HEAD
-*/.idea/**/workspace.xml
-*/.idea/**/tasks.xml
-*/.idea/**/usage.statistics.xml
-*/.idea/**/dictionaries
-*/.idea/**/shelf
-
-# Generated files
-*/.idea/**/contentModel.xml
-
-# Sensitive or high-churn files
-*/.idea/**/dataSources/
-*/.idea/**/dataSources.ids
-*/.idea/**/dataSources.local.xml
-*/.idea/**/sqlDataSources.xml
-=======
 .idea/**/workspace.xml
 .idea/**/tasks.xml
 .idea/**/usage.statistics.xml
@@ -495,3 +475,4 @@ codes/coco/dataset/
 
 human_pose/models
 
+.idea/GomsonModel.iml
