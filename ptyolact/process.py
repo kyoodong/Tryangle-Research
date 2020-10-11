@@ -230,13 +230,15 @@ def detect(net:Yolact, path:str, top_k:int=5, cuda:bool=True):
     img = cv2.imread(path)
     frame = torch.from_numpy(img).float()
     if cuda:
-        frame = frame.cuda()
+        frame = frame.to(torch.device("cuda:0"))
     batch = FastBaseTransform()(frame.unsqueeze(0))
 
     # YOLACT 실행
     st = time.time()
+    # with torch.autograd.profiler.profile(record_shapes=True, use_cuda=cuda) as prof:
     det_outs = net(batch)
-    print(f"[INFO] YOLACT prediction time: {time.time() - st}")
+    # print(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
+    # print(f"[INFO] YOLACT prediction time: {time.time() - st}")
 
     # 이미지 검색을 위한 feature 처리
     fpn_feature = det_outs[0]['detection']['fpn_feature']
@@ -248,7 +250,6 @@ def detect(net:Yolact, path:str, top_k:int=5, cuda:bool=True):
     # 특히 masks 값의 경우 coefficient값이기 때문에 후처리를 통해
     # 사용가능한 mask 형태로 바꿔줘야 함
     h, w, _ = frame.shape
-
     with timer.env('Postprocess'):
         save = cfg.rescore_bbox
         cfg.rescore_bbox = True
@@ -271,19 +272,18 @@ def detect(net:Yolact, path:str, top_k:int=5, cuda:bool=True):
 if __name__ == "__main__":
 
     import os
-    image_path = '../images/test12.jpg'
-    trained_model = 'weights/yolact_base_54_800000.pth'
-    if not os.path.exists(image_path):
-        print(f"doesn't exist {image_path}")
-        exit()
+    image_dir = "../images"
+    image_names = ['test12.jpg']
+    trained_model = 'weights/yolact_plus_resnet50_54_800000.pth'
 
-    # model_path = SavePath.from_str(trained_model)
-    # config = model_path.model_name + '_config'
-    # print(f'Config not specified. Parsed {config} from the file name.')
-    # set_cfg(config)
+    # Yolact config Setting
+    model_path = SavePath.from_str(trained_model)
+    config = model_path.model_name + '_config'
+    print(f'Config not specified. Parsed {config} from the file name.')
+    set_cfg(config)
 
     # GPU 사용 여부
-    cuda = False
+    cuda = True
     print('Loading model... ', end='')
     net = Yolact()
     net.load_weights(trained_model)
@@ -307,24 +307,41 @@ if __name__ == "__main__":
         net = net.cuda()
 
     with torch.no_grad():
-        # 이미지에 Yolact 결과를 출력하는 부분
-        # evalimage(net, image_path)
 
-        # mask 부분만 따로 보는 코드
-        classes, scores, boxes, masks, fpn_feature = detect(net, image_path, cuda=cuda)
+        for image_name in image_names:
+            image_path = f"{image_dir}/{image_name}"
+            if not os.path.exists(image_path):
+                print(f"doesn't exist {image_path}")
+                continue
+            else:
+                print(f"-------Test..{image_name}---------")
 
-        plt.imshow(cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB))
-        plt.title("Query")
-        plt.show()
-        for i in range(classes.shape[0]):
-            _class = cfg.dataset.class_names[classes[i]]
-            x1, y1, x2, y2 = boxes[i]
-            _mask = np.zeros_like(masks[i])
-            # _mask[y1:y2, x1:x2] = masks[i, y1:y2, x1:x2]
+            # 이미지에 Yolact 결과를 출력하는 부분
+            # evalimage(net, image_path)
 
-            plt.imshow(masks[i], cmap='gray')
-            plt.title(_class)
+            # pytorch에서 처음 모델을 돌리면 대략 1초정도가 소모되는 경향이 있어
+            # 미리 한 번 볼리는 코드
+            timer.disable_all()
+            detect(net, image_path, cuda=cuda)
+            timer.enable_all()
+
+            # mask 부분만 따로 보는 코드
+            st = time.time()
+            classes, scores, boxes, masks, fpn_feature = detect(net, image_path, top_k=15, cuda=cuda)
+            print(f"Detect time {time.time() - st} sec...")
+
+            plt.imshow(cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB))
+            plt.title("Query")
             plt.show()
+            for i in range(classes.shape[0]):
+                _class = cfg.dataset.class_names[classes[i]]
+                x1, y1, x2, y2 = boxes[i]
+                _mask = np.zeros_like(masks[i])
+                # _mask[y1:y2, x1:x2] = masks[i, y1:y2, x1:x2]
+
+                plt.imshow(masks[i], cmap='gray')
+                plt.title(_class)
+                plt.show()
 
         # 소모된 시간
         timer.print_stats()
