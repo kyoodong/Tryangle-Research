@@ -1,11 +1,9 @@
 import cv2
 import numpy as np
 
-import process.segmentation as segmentation
-from mrcnn import visualize
-from process.segmentation import MaskRCNN
+from ptyolact.process import YOLACT
 
-mask_rcnn = MaskRCNN()
+model = YOLACT()
 
 
 def segment(image):
@@ -29,8 +27,5 @@ def segment(image):
     image = clahe_image
 
     # Run detection
-    results = mask_rcnn.detect(image)
-    r = results[0]
-    visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'],
-                                segmentation.class_names, r['scores'])
-    return r
+    results = model.detect(image)
+    return results

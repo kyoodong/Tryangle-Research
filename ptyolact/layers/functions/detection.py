@@ -54,6 +54,7 @@ class Detect(object):
         conf_data  = predictions['conf']
         mask_data  = predictions['mask']
         prior_data = predictions['priors']
+        fpn_feature= predictions['fpn_feature']
 
         proto_data = predictions['proto'] if 'proto' in predictions else None
         inst_data  = predictions['inst']  if 'inst'  in predictions else None
@@ -70,8 +71,8 @@ class Detect(object):
                 decoded_boxes = decode(loc_data[batch_idx], prior_data)
                 result = self.detect(batch_idx, conf_preds, decoded_boxes, mask_data, inst_data)
 
-                if result is not None and proto_data is not None:
-                    result['fpn_feature'] = predictions['fpn_feature']
+                if result is not None and proto_data is not None and fpn_feature is not None:
+                    result['fpn_feature'] = fpn_feature[batch_idx]
                     result['proto'] = proto_data[batch_idx]
 
                 out.append({'detection': result, 'net': net})
@@ -184,7 +185,7 @@ class Detect(object):
         import pyximport
         pyximport.install(setup_args={"include_dirs":np.get_include()}, reload_support=True)
 
-        from utils.cython_nms import nms as cnms
+        from ptyolact.utils.cython_nms import nms as cnms
 
         num_classes = scores.size(0)
 
@@ -227,3 +228,5 @@ class Detect(object):
 
         # Undo the multiplication above
         return boxes[idx] / cfg.max_size, masks[idx], classes, scores
+
+

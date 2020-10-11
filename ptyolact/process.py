@@ -6,9 +6,11 @@ import numpy as np
 
 import torch
 import torch.backends.cudnn as cudnn
+import os
+import sys
 import torch.nn.functional as F
 
-from ptyolact.yolact import Yolact
+import ptyolact.yolact as yolactlib
 from ptyolact.data import COLORS
 from ptyolact.utils.augmentations import FastBaseTransform
 from ptyolact.layers.output_utils import postprocess, undo_image_transformation
@@ -16,7 +18,45 @@ from ptyolact.utils import timer
 from ptyolact.utils.functions import SavePath
 from ptyolact.data import cfg, set_cfg
 
+
 color_cache = defaultdict(lambda: {})
+
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
+
+sys.path.append(ROOT_DIR)  # To find local version of the library
+TRAINED_MODEL = os.path.join(ROOT_DIR, 'ptyolact/weights/yolact_base_54_800000.pth')
+
+cuda = True
+# --------------------------------------------
+
+# Yolact config Setting
+model_path = SavePath.from_str(TRAINED_MODEL)
+config = model_path.model_name + '_config'
+print(f'Config not specified. Parsed {config} from the file name.')
+set_cfg(config)
+
+print('Loading model... ', end='')
+net = yolactlib.Yolact()
+net.load_weights(TRAINED_MODEL)
+net.eval()
+if cuda:
+    net = net.cuda()
+print(' Done.')
+
+if cuda:
+    cudnn.fastest = True
+    torch.set_default_tensor_type('torch.cuda.FloatTensor')
+else:
+    torch.set_default_tensor_type('torch.FloatTensor')
+
+# Whether to use a faster, but not entirely correct version of NMS
+net.detect.use_fast_nms = True
+# Whether compute NMS cross-class or per-class
+net.detect.use_cross_class_nms = False
+# Outputs stuff for scripts/compute_mask.py
+cfg.mask_proto_debug = False
+# -----------------------------------------
+
 
 def prep_display(dets_out, img, h, w, undo_transform=True, class_color=False, mask_alpha=0.45, fps_str=''):
     """
@@ -169,7 +209,7 @@ def prep_display(dets_out, img, h, w, undo_transform=True, class_color=False, ma
     return img_numpy
 
 
-def evalimage(net:Yolact, path:str, save_path:str=None):
+def evalimage(net:yolactlib.Yolact, path:str, save_path:str=None):
     # Whether to use a faster, but not entirely correct version of NMS
     net.detect.use_fast_nms = True
     # Whether compute NMS cross-class or per-class
@@ -216,95 +256,79 @@ def evalimage(net:Yolact, path:str, save_path:str=None):
         cv2.imwrite(save_path, img_numpy)
 
 
-def detect(net:Yolact, path:str, top_k:int=5, cuda:bool=True):
-    """
+class YOLACT():
+    def detect(self, img, top_k: int = 15):
+        """
 
-    :param net: Yolact 모델
-    :param path: 이미지 경로
-    :param top_k: detection된 정보 중 score기반으로 상위 몇 개를 선택할지
+        :param net: Yolact 모델
+        :param img: 이미지 numpy 배열
+        :param top_k: detection된 정보 중 score기반으로 상위 몇 개를 선택할지
 
-    :return: classes, scores, boxes, masks, p3_out(이미지 검색에 사용되는 feature map)
-    """
+        :return: classes, scores, boxes, masks, p3_out(이미지 검색에 사용되는 feature map)
+        """
 
-    # 이미지 불러오기
-    img = cv2.imread(path)
-    frame = torch.from_numpy(img).float()
-    if cuda:
-        frame = frame.to(torch.device("cuda:0"))
-    batch = FastBaseTransform()(frame.unsqueeze(0))
+        with torch.no_grad():
+            frame = torch.from_numpy(img).float()
+            if cuda:
+                frame = frame.to(torch.device("cuda:0"))
+            batch = FastBaseTransform()(frame.unsqueeze(0))
 
-    # YOLACT 실행
-    st = time.time()
-    # with torch.autograd.profiler.profile(record_shapes=True, use_cuda=cuda) as prof:
-    det_outs = net(batch)
-    # print(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
-    # print(f"[INFO] YOLACT prediction time: {time.time() - st}")
+            # YOLACT 실행
+            det_outs = net(batch)
 
-    # 이미지 검색을 위한 feature 처리
-    fpn_feature = det_outs[0]['detection']['fpn_feature']
-    global_avg_pool_out = F.adaptive_avg_pool2d(fpn_feature, (1, 1))
-    global_avg_pool_out = global_avg_pool_out.view(1, global_avg_pool_out.size(1))
+            # 이미지 검색을 위한 feature 처리
+            det_fpn_feature = det_outs[0]['detection']['fpn_feature']
+            global_avg_pool_out = F.adaptive_avg_pool2d(det_fpn_feature, (1, 1))
+            global_avg_pool_out = global_avg_pool_out.view(1, global_avg_pool_out.size(0))
+            fpn_feature = global_avg_pool_out.cpu().numpy()
 
-    # YOLACT output 데이터 후처리
-    # YOLACT에서 나온 값들은 바로 사용할 수가 없음
-    # 특히 masks 값의 경우 coefficient값이기 때문에 후처리를 통해
-    # 사용가능한 mask 형태로 바꿔줘야 함
-    h, w, _ = frame.shape
-    with timer.env('Postprocess'):
-        save = cfg.rescore_bbox
-        cfg.rescore_bbox = True
-        # postprocess output -> classes, scores, boxes, masks
-        t = postprocess(det_outs, w, h,
-                        visualize_lincomb=False,
-                        crop_masks=True,
-                        score_threshold=0.1)
-        cfg.rescore_bbox = save
+            # YOLACT output 데이터 후처리
+            # YOLACT에서 나온 값들은 바로 사용할 수가 없음
+            # 특히 masks 값의 경우 coefficient값이기 때문에 후처리를 통해
+            # 사용가능한 mask 형태로 바꿔줘야 함
+            h, w, _ = frame.shape
+            with timer.env('Postprocess'):
+                save = cfg.rescore_bbox
+                cfg.rescore_bbox = True
+                # postprocess output -> classes, scores, boxes, masks
+                t = postprocess(det_outs, w, h,
+                                visualize_lincomb=False,
+                                crop_masks=True,
+                                score_threshold=0.1)
+                cfg.rescore_bbox = save
 
+            with timer.env('Copy'):
+                # top_k개만 추출
+                idx = t[1].argsort(0, descending=True)[:top_k]
+                masks = t[3][idx].cpu().numpy()
+                classes, scores, boxes = [x[idx].cpu().numpy() for x in t[:3]]
 
-    with timer.env('Copy'):
-        # top_k개만 추출
-        idx = t[1].argsort(0, descending=True)[:top_k]
-        masks = t[3][idx].cpu().numpy()
-        classes, scores, boxes = [x[idx].cpu().numpy() for x in t[:3]]
+        out = {
+            "rois": boxes,
+            "class_ids": classes,
+            "scores": scores,
+            "masks": masks,
+            "fpn_feature": fpn_feature
+        }
 
-    return classes, scores, boxes, masks, global_avg_pool_out
+        return out
+
 
 if __name__ == "__main__":
 
     import os
     image_dir = "../images"
     image_names = ['test12.jpg']
-    trained_model = 'weights/yolact_plus_resnet50_54_800000.pth'
 
-    # Yolact config Setting
-    model_path = SavePath.from_str(trained_model)
-    config = model_path.model_name + '_config'
-    print(f'Config not specified. Parsed {config} from the file name.')
-    set_cfg(config)
-
-    # GPU 사용 여부
     cuda = True
-    print('Loading model... ', end='')
-    net = Yolact()
-    net.load_weights(trained_model)
-    net.eval()
-    print(' Done.')
 
-    # Whether to use a faster, but not entirely correct version of NMS
-    net.detect.use_fast_nms = True
-    # Whether compute NMS cross-class or per-class
-    net.detect.use_cross_class_nms = False
-    # Outputs stuff for scripts/compute_mask.py
-    cfg.mask_proto_debug = False
+    model = YOLACT()
 
     if cuda:
-        cudnn.fastest = True
+        # cudnn.fastest = True
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
     else:
         torch.set_default_tensor_type('torch.FloatTensor')
-
-    if cuda:
-        net = net.cuda()
 
     with torch.no_grad():
 
@@ -319,27 +343,29 @@ if __name__ == "__main__":
             # 이미지에 Yolact 결과를 출력하는 부분
             # evalimage(net, image_path)
 
+
+            img = cv2.imread(image_path)
             # pytorch에서 처음 모델을 돌리면 대략 1초정도가 소모되는 경향이 있어
             # 미리 한 번 볼리는 코드
             timer.disable_all()
-            detect(net, image_path, cuda=cuda)
+            model.detect(img)
             timer.enable_all()
 
             # mask 부분만 따로 보는 코드
             st = time.time()
-            classes, scores, boxes, masks, fpn_feature = detect(net, image_path, top_k=15, cuda=cuda)
+            out = model.detect(img)
             print(f"Detect time {time.time() - st} sec...")
 
             plt.imshow(cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB))
             plt.title("Query")
             plt.show()
-            for i in range(classes.shape[0]):
-                _class = cfg.dataset.class_names[classes[i]]
-                x1, y1, x2, y2 = boxes[i]
-                _mask = np.zeros_like(masks[i])
+            for i in range(out["class_ids"].shape[0]):
+                _class = cfg.dataset.class_names[out["class_ids"][i]]
+                x1, y1, x2, y2 = out["rois"][i]
+                _mask = np.zeros_like(out["masks"][i])
                 # _mask[y1:y2, x1:x2] = masks[i, y1:y2, x1:x2]
 
-                plt.imshow(masks[i], cmap='gray')
+                plt.imshow(out["masks"][i], cmap='gray')
                 plt.title(_class)
                 plt.show()
 
