@@ -67,21 +67,21 @@ def __get_contour_center_point(image, x, y, visits, threshold):
 
 # 외곽선 + 오브젝트의 무게중심을 구해주는 함수
 def get_contour_center_point(image, threshold):
-    channels = image.shape[-1]
-    height = image.shape[0]
+    channels = image.shape[0]
+    height = image.shape[-1]
     width = image.shape[1]
     layered_image = np.zeros_like(image)
     cogs = list()
     areas = list()
     for i in range(channels):
-        visits = np.zeros_like(image[:, :, i])
+        visits = np.zeros_like(image[i, :, :])
         is_finish = False
         for h in range(height):
             for w in range(width):
                 if image[h][w][i] and not visits[h][w]:
                     # bfs 를 돌려서 외곽선 탐색
-                    l, cog, area = __get_contour_center_point(image[:, :, i], w, h, visits, threshold)
-                    layered_image[:, :, i] += l
+                    l, cog, area = __get_contour_center_point(image[i, :, :], w, h, visits, threshold)
+                    layered_image[i, :, :] += l
                     cogs.append(cog)
                     areas.append(area)
                     is_finish = True
