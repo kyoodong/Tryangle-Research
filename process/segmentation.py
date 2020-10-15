@@ -26,7 +26,7 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 sys.path.append(ROOT_DIR)  # To find local version of the library
 TRAINED_MODEL = os.path.join(ROOT_DIR, 'ptyolact/weights/yolact_base_54_800000.pth')
 
-cuda = True
+cuda = False
 # ----YOLACT 기본 설정----------------------------------
 
 # Yolact config Setting
@@ -37,7 +37,7 @@ set_cfg(config)
 
 print('Loading model... ', end='')
 net = yolactlib.Yolact()
-net.load_weights(TRAINED_MODEL)
+net.load_weights(TRAINED_MODEL, cuda)
 net.eval()
 if cuda:
     net = net.cuda()
@@ -255,7 +255,7 @@ class YOLACT():
             frame = torch.from_numpy(img).float()
             if cuda:
                 frame = frame.to(torch.device("cuda:0"))
-            batch = FastBaseTransform()(frame.unsqueeze(0))
+            batch = FastBaseTransform(False)(frame.unsqueeze(0))
 
             # YOLACT 실행
             det_outs = net(batch)
