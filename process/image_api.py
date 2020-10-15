@@ -1,12 +1,17 @@
 import cv2
 import numpy as np
 
-from ptyolact.process import YOLACT
+from process.segmentation import YOLACT
 
 model = YOLACT()
 
 
 def segment(image):
+    """
+
+    :param image: image numpy array from cv2.imread
+    """
+
     ### 밝기 보정 소스
     gamma = 0.4
     lookUpTable = np.empty((1, 256), np.uint8)
