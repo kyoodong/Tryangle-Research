@@ -5,6 +5,7 @@ import process.image_api as api
 import numpy as np
 from process.pose import CVPoseEstimator, CvClassifier, HumanPose
 import time
+import matplotlib.pyplot as plt
 
 cv_estimator = CVPoseEstimator()
 pose_classifier = CvClassifier()
@@ -99,23 +100,27 @@ class Guider:
         diff_time = get_time() - now
         print('segmentation time : ', diff_time)
 
-        # now = get_time()
-        # self.get_object_and_guide()
-        # diff_time = get_time() - now
-        # print('get_object_and_guide time : ', diff_time)
-        #
-        # now = get_time()
-        # self.get_effective_line_and_guide()
-        # diff_time = get_time() - now
-        # print('get_effective_line_and_guide time : ', diff_time)
-        #
-        # now = get_time()
-        # for component in self.component_list:
-        #     if isinstance(component, ObjectComponent):
-        #         self.get_obj_position_guides(component)
-        #
-        # diff_time = get_time() - now
-        # print('get_obj_position_guides time : ', diff_time)
+        for i in range(self.r['masks'].shape[0]):
+            plt.imshow(self.r['masks'][i], 'gray')
+            plt.show()
+
+        now = get_time()
+        self.get_object_and_guide()
+        diff_time = get_time() - now
+        print('get_object_and_guide time : ', diff_time)
+
+        now = get_time()
+        self.get_effective_line_and_guide()
+        diff_time = get_time() - now
+        print('get_effective_line_and_guide time : ', diff_time)
+
+        now = get_time()
+        for component in self.component_list:
+            if isinstance(component, ObjectComponent):
+                self.get_obj_position_guides(component)
+
+        diff_time = get_time() - now
+        print('get_obj_position_guides time : ', diff_time)
 
     def get_object_and_guide(self):
         # 객체마다 외곽선만 따도록 수정
@@ -299,15 +304,6 @@ class PoseGuider:
     def run(self, image):
         guide_message_list = list()
         height, width = image.shape[0], image.shape[1]
-
-        # for key in Human.BODY_PARTS.keys():
-        #     if human.pose[Human.BODY_PARTS[key]][2] > HumanPose.POSE_THRESHOLD:
-        #         center = np.array(human.pose[Human.BODY_PARTS[key]][:2]) + np.array([human.extended_roi[1], human.extended_roi[0]])
-        #         center = tuple(center)
-        #         cv2.circle(image, center, 3, (255, 0, 0), thickness=3)
-        #         cv2.putText(image, key, center, cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 1, (0, 255, 255), 2)
-        # plt.imshow(image)
-        # plt.show()
 
         # 서 있는 경우
         if self.human.pose_class == HumanPose.Stand:
