@@ -28,6 +28,7 @@ class Detect(object):
         
         self.use_cross_class_nms = False
         self.use_fast_nms = False
+        self.use_soft_nms = False
 
     def __call__(self, predictions, net):
         """
@@ -101,8 +102,12 @@ class Detect(object):
                 boxes, masks, classes, scores = self.cc_fast_nms(boxes, masks, scores, self.nms_thresh, self.top_k)
             else:
                 boxes, masks, classes, scores = self.fast_nms(boxes, masks, scores, self.nms_thresh, self.top_k)
+        elif self.use_soft_nms:
+            boxes, masks, classes, scores = self.soft_nms(boxes, masks, scores, self.nms_thresh,
+                                                                 self.conf_thresh)
         else:
-            boxes, masks, classes, scores = self.traditional_nms(boxes, masks, scores, self.nms_thresh, self.conf_thresh)
+            boxes, masks, classes, scores = self.traditional_nms(boxes, masks, scores, self.nms_thresh,
+                                                                 self.conf_thresh)
 
             if self.use_cross_class_nms:
                 print('Warning: Cross Class Traditional NMS is not implemented.')
@@ -182,6 +187,7 @@ class Detect(object):
         return boxes, masks, classes, scores
 
     def traditional_nms(self, boxes, masks, scores, iou_threshold=0.5, conf_thresh=0.05):
+        # 각 클래스별로 nms 돌림
         import pyximport
         pyximport.install(setup_args={"include_dirs":np.get_include()}, reload_support=True)
 
@@ -230,3 +236,50 @@ class Detect(object):
         return boxes[idx] / cfg.max_size, masks[idx], classes, scores
 
 
+    def soft_nms(self, boxes, masks, scores, iou_threshold=0.5, conf_thresh=0.05):
+        import pyximport
+        pyximport.install(setup_args={"include_dirs":np.get_include()}, reload_support=True)
+
+        from ptyolact.utils.cython_nms import soft_nms as csoft_nms
+
+        num_classes = scores.size(0)
+
+        idx_lst = []
+        cls_lst = []
+        scr_lst = []
+
+        # Multiplying by max_size is necessary because of how csoft_nms computes its area and intersections
+        boxes = boxes * cfg.max_size
+
+        for _cls in range(num_classes):
+            cls_scores = scores[_cls, :]
+            conf_mask = cls_scores > conf_thresh
+            idx = torch.arange(cls_scores.size(0), device=boxes.device)
+
+            cls_scores = cls_scores[conf_mask]
+            idx = idx[conf_mask]
+
+            if cls_scores.size(0) == 0:
+                continue
+
+            preds = torch.cat([boxes[conf_mask], cls_scores[:, None]], dim=1).cpu().numpy()
+            _, keep = csoft_nms(preds, iou_threshold)
+            keep = torch.Tensor(keep, device=boxes.device).long()
+
+            idx_lst.append(idx[keep])
+            cls_lst.append(keep * 0 + _cls)
+            scr_lst.append(cls_scores[keep])
+
+        idx     = torch.cat(idx_lst, dim=0)
+        classes = torch.cat(cls_lst, dim=0)
+        scores  = torch.cat(scr_lst, dim=0)
+
+        scores, idx2 = scores.sort(0, descending=True)
+        idx2 = idx2[:cfg.max_num_detections]
+        scores = scores[:cfg.max_num_detections]
+
+        idx = idx[idx2]
+        classes = classes[idx2]
+
+        # Undo the multiplication above
+        return boxes[idx] / cfg.max_size, masks[idx], classes, scores
