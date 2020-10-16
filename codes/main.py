@@ -16,5 +16,5 @@ while True:
     image = skimage.io.imread(os.path.join(IMAGE_DIR, "{}.jpg".format(image_file_name)))
 
     # r = api.segment(image)
-    guider = Guider(image)
+    guider = Guider(image, False)
     print(str(guider))

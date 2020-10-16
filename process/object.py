@@ -9,7 +9,7 @@ class Object:
         self.area = area
 
     def is_person(self):
-        return self.clazz == 1
+        return self.clazz == 0
 
 
 class Human(Object):
