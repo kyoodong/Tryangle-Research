@@ -7,6 +7,8 @@ from process.pose import CVPoseEstimator, CvClassifier, HumanPose
 import time
 import matplotlib.pyplot as plt
 
+DEBUG = True
+
 cv_estimator = CVPoseEstimator()
 pose_classifier = CvClassifier()
 
@@ -88,39 +90,40 @@ class Guider:
         "머리 위에 여백이 있는것이 좋습니다",
     ]
 
-    def __init__(self, image):
+    def __init__(self, image, only_segmentation = True):
         self.image = image
         self.component_list = list()
         self.guide_list = list()
         for guide in range(len(Guider.guide_list)):
             self.guide_list.append([])
 
+        if DEBUG:
+            plt.imshow(image)
+            plt.show()
+
         now = get_time()
         self.r = api.segment(image)
         diff_time = get_time() - now
         print('segmentation time : ', diff_time)
 
-        for i in range(self.r['masks'].shape[0]):
-            plt.imshow(self.r['masks'][i], 'gray')
-            plt.show()
+        if not only_segmentation:
+            now = get_time()
+            self.get_object_and_guide()
+            diff_time = get_time() - now
+            print('get_object_and_guide time : ', diff_time)
 
-        now = get_time()
-        self.get_object_and_guide()
-        diff_time = get_time() - now
-        print('get_object_and_guide time : ', diff_time)
+            now = get_time()
+            self.get_effective_line_and_guide()
+            diff_time = get_time() - now
+            print('get_effective_line_and_guide time : ', diff_time)
 
-        now = get_time()
-        self.get_effective_line_and_guide()
-        diff_time = get_time() - now
-        print('get_effective_line_and_guide time : ', diff_time)
+            now = get_time()
+            for component in self.component_list:
+                if isinstance(component, ObjectComponent):
+                    self.get_obj_position_guides(component)
 
-        now = get_time()
-        for component in self.component_list:
-            if isinstance(component, ObjectComponent):
-                self.get_obj_position_guides(component)
-
-        diff_time = get_time() - now
-        print('get_obj_position_guides time : ', diff_time)
+            diff_time = get_time() - now
+            print('get_obj_position_guides time : ', diff_time)
 
     def get_object_and_guide(self):
         # 객체마다 외곽선만 따도록 수정
@@ -133,9 +136,13 @@ class Guider:
 
         for index, center_point in enumerate(center_points):
             if center_point:
+                if DEBUG:
+                    plt.imshow(layered_images[index], 'gray')
+                    plt.show()
+
                 # roi 를 살짝 넓직하게 잡아야 사람 포즈 인식이 잘됨
                 roi = self.r['rois'][index]
-                obj = Object(roi, self.r['masks'][:, :, index], self.r['class_ids'][index], self.r['scores'][index],
+                obj = Object(roi, self.r['masks'][index, :, :], self.r['class_ids'][index], self.r['scores'][index],
                              center_point, areas[index])
                 if obj.is_person():
                     # 사진 내 여러 사람이 있을 수 있으므로 해당 객체만을 오려내서 pose estimation 을 돌림
@@ -154,6 +161,10 @@ class Guider:
 
                     # 사람 주변으로 잘린 crop 이미지 준비
                     cropped_image = self.image[roi[0]: roi[2], roi[1]:roi[3]]
+
+                    if DEBUG:
+                        plt.imshow(cropped_image)
+                        plt.show()
 
                     # 포즈 추정
                     now = get_time()
