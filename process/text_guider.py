@@ -78,7 +78,7 @@ def get_contour_center_point(image, threshold):
         is_finish = False
         for h in range(height):
             for w in range(width):
-                if image[h][w][i] and not visits[h][w]:
+                if image[i][h][w] and not visits[h][w]:
                     # bfs 를 돌려서 외곽선 탐색
                     l, cog, area = __get_contour_center_point(image[i, :, :], w, h, visits, threshold)
                     layered_image[i, :, :] += l
