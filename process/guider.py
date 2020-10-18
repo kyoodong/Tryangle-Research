@@ -129,29 +129,31 @@ class Guider:
 
             if self.is_single_person():
                 person = self.get_single_person()
-                point = scaling([[
-                    person.object.center_point[0],
-                    person.object.center_point[1],
-                    person.object.area,
-                    person.object.pose[0][0], person.object.pose[0][1],
-                    person.object.pose[1][0], person.object.pose[1][1],
-                    person.object.pose[2][0], person.object.pose[2][1],
-                    person.object.pose[3][0], person.object.pose[3][1],
-                    person.object.pose[4][0], person.object.pose[4][1],
-                    person.object.pose[5][0], person.object.pose[5][1],
-                    person.object.pose[6][0], person.object.pose[6][1],
-                    person.object.pose[7][0], person.object.pose[7][1],
-                    person.object.pose[8][0], person.object.pose[8][1],
-                    person.object.pose[9][0], person.object.pose[9][1],
-                    person.object.pose[10][0], person.object.pose[10][1],
-                    person.object.pose[11][0], person.object.pose[11][1],
-                    person.object.pose[12][0], person.object.pose[12][1],
-                    person.object.pose[13][0], person.object.pose[13][1],
-                    person.object.pose[14][0], person.object.pose[14][1],
-                    person.object.pose[15][0], person.object.pose[15][1],
-                    person.object.pose[16][0], person.object.pose[16][1],
-                ]])[0]
-                self.cluster = find_nearest(point)
+                if person.object.pose is not None:
+                    area = float(person.object.area) / (image.shape[0] * image.shape[1])
+                    point = scaling([[
+                        person.object.center_point[0],
+                        person.object.center_point[1],
+                        area,
+                        person.object.pose[0][0], person.object.pose[0][1],
+                        person.object.pose[1][0], person.object.pose[1][1],
+                        person.object.pose[2][0], person.object.pose[2][1],
+                        person.object.pose[3][0], person.object.pose[3][1],
+                        person.object.pose[4][0], person.object.pose[4][1],
+                        person.object.pose[5][0], person.object.pose[5][1],
+                        person.object.pose[6][0], person.object.pose[6][1],
+                        person.object.pose[7][0], person.object.pose[7][1],
+                        person.object.pose[8][0], person.object.pose[8][1],
+                        person.object.pose[9][0], person.object.pose[9][1],
+                        person.object.pose[10][0], person.object.pose[10][1],
+                        person.object.pose[11][0], person.object.pose[11][1],
+                        person.object.pose[12][0], person.object.pose[12][1],
+                        person.object.pose[13][0], person.object.pose[13][1],
+                        person.object.pose[14][0], person.object.pose[14][1],
+                        person.object.pose[15][0], person.object.pose[15][1],
+                        person.object.pose[16][0], person.object.pose[16][1],
+                    ]])[0]
+                    self.cluster = find_nearest(point)
 
 
     def is_single_person(self):

@@ -6,9 +6,11 @@ from sklearn.cluster import KMeans, SpectralClustering
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import math
-import matplotlib.pyplot as plt
+import os
 
-df = pd.read_csv('../process/cluster_data.csv', names=['url', 'image_id', 'center_x', 'center_y', 'area', 'id', 'object_id', 'pose_id',
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
+
+df = pd.read_csv('{}/process/cluster_data.csv'.format(ROOT_DIR), names=['url', 'image_id', 'center_x', 'center_y', 'area', 'id', 'object_id', 'pose_id',
                                     'nose_x', 'nose_y',
                                     'left_eye_x', 'left_eye_y',
                                     'right_eye_x', 'right_eye_y',
