@@ -474,6 +474,7 @@ DataFormatConverter/*.json
 
 logs/
 codes/coco/dataset/
+process/cluster_data.csv
 
 human_pose/models
 
