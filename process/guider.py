@@ -129,7 +129,7 @@ class Guider:
 
             if self.is_single_person():
                 person = self.get_single_person()
-                if person.object.pose is not None:
+                if isinstance(person.object, Human):
                     area = float(person.object.area) / (image.shape[0] * image.shape[1])
                     point = scaling([[
                         person.object.center_point[0],
