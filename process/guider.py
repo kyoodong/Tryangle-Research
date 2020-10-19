@@ -6,6 +6,7 @@ import numpy as np
 from process.pose import CVPoseEstimator, CvClassifier, HumanPose
 import time
 import matplotlib.pyplot as plt
+from process.image_clusterer import find_nearest, scaling
 
 DEBUG = True
 
@@ -94,6 +95,7 @@ class Guider:
         self.image = image
         self.component_list = list()
         self.guide_list = list()
+        self.cluster = -1
         for guide in range(len(Guider.guide_list)):
             self.guide_list.append([])
 
@@ -106,7 +108,7 @@ class Guider:
         diff_time = get_time() - now
         print('segmentation time : ', diff_time)
 
-        if not only_segmentation:
+        if not only_segmentation and self.r["rois"].shape[0] > 0:
             now = get_time()
             self.get_object_and_guide()
             diff_time = get_time() - now
@@ -124,6 +126,50 @@ class Guider:
 
             diff_time = get_time() - now
             print('get_obj_position_guides time : ', diff_time)
+
+            if self.is_single_person():
+                person = self.get_single_person()
+                if isinstance(person.object, Human):
+                    area = float(person.object.area) / (image.shape[0] * image.shape[1])
+                    point = scaling([[
+                        person.object.center_point[0],
+                        person.object.center_point[1],
+                        area,
+                        person.object.pose[0][0], person.object.pose[0][1],
+                        person.object.pose[1][0], person.object.pose[1][1],
+                        person.object.pose[2][0], person.object.pose[2][1],
+                        person.object.pose[3][0], person.object.pose[3][1],
+                        person.object.pose[4][0], person.object.pose[4][1],
+                        person.object.pose[5][0], person.object.pose[5][1],
+                        person.object.pose[6][0], person.object.pose[6][1],
+                        person.object.pose[7][0], person.object.pose[7][1],
+                        person.object.pose[8][0], person.object.pose[8][1],
+                        person.object.pose[9][0], person.object.pose[9][1],
+                        person.object.pose[10][0], person.object.pose[10][1],
+                        person.object.pose[11][0], person.object.pose[11][1],
+                        person.object.pose[12][0], person.object.pose[12][1],
+                        person.object.pose[13][0], person.object.pose[13][1],
+                        person.object.pose[14][0], person.object.pose[14][1],
+                        person.object.pose[15][0], person.object.pose[15][1],
+                        person.object.pose[16][0], person.object.pose[16][1],
+                    ]])[0]
+                    self.cluster = find_nearest(point)
+
+
+    def is_single_person(self):
+        count = 0
+        for component in self.component_list:
+            if isinstance(component, ObjectComponent):
+                if component.object.clazz == 0:
+                    count += 1
+
+        return count == 1
+
+    def get_single_person(self):
+        for component in self.component_list:
+            if isinstance(component, ObjectComponent):
+                if component.object.clazz == 0:
+                    return component
 
     def get_object_and_guide(self):
         # 객체마다 외곽선만 따도록 수정

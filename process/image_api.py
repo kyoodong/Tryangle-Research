@@ -33,11 +33,12 @@ def segment(image):
 
     # Run detection
     results = model.detect(image)
-    tmp = results["rois"][:, 1].copy()
-    results["rois"][:, 1] = results["rois"][:, 0].copy()
-    results["rois"][:, 0] = tmp.copy()
+    if results["rois"].shape[0] > 0:
+        tmp = results["rois"][:, 1].copy()
+        results["rois"][:, 1] = results["rois"][:, 0].copy()
+        results["rois"][:, 0] = tmp.copy()
 
-    tmp = results["rois"][:, 3].copy()
-    results["rois"][:, 3] = results["rois"][:, 2].copy()
-    results["rois"][:, 2] = tmp.copy()
+        tmp = results["rois"][:, 3].copy()
+        results["rois"][:, 3] = results["rois"][:, 2].copy()
+        results["rois"][:, 2] = tmp.copy()
     return results
