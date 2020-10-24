@@ -91,6 +91,7 @@ if args.dataset is not None:
 if args.autoscale and args.batch_size != 8:
     factor = args.batch_size / 8
     if __name__ == '__main__':
+        print(f"max_iter is {cfg.max_iter // factor}")
         print('Scaling parameters by %.2f to account for a batch size of %d.' % (factor, args.batch_size))
 
     cfg.lr *= factor
