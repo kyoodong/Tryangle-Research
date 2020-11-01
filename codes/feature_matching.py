@@ -1,9 +1,7 @@
-import numpy as np
 import cv2 as cv
-import matplotlib.pyplot as plt
 import os
 import sys
-from process.guider import Guider
+from process.guider.guider import Guider
 from process.time import get_millisecond
 
 # Root directory of the project
