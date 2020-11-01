@@ -1,7 +1,7 @@
 import os
 import sys
 import skimage.io
-from process.guider import Guider
+from process.guider.guider import Guider
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
