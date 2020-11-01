@@ -96,7 +96,6 @@ class Guider:
                     ]])[0]
                     self.cluster = find_nearest(point)
 
-
     def is_single_person(self):
         count = 0
         for component in self.component_list:
@@ -203,34 +202,26 @@ class Guider:
                 for pose_guide in pose_guide_list:
                     obj_component.guide_list.append(pose_guide)
 
-        left_side = int(image_w / 3)
-        right_side = int(image_w / 3 * 2)
         middle_side = int(image_w / 2)
-
-        left_diff = int(np.abs(left_side - obj.center_point[0]))
-        right_diff = int(np.abs(right_side - obj.center_point[0]))
         middle_diff = int(np.abs(middle_side - obj.center_point[0]))
 
-        golden_ratio_area_list = self.get_golden_ratio_area()
+        for index, golden_area in enumerate(self.get_golden_ratio_area()):
+            iou = get_iou(golden_area, obj_component.object.mask)
+            if iou > 0.7:
+                obj_component.guide_list.append(ObjectGuide(obj_component.id, 5, index, 0))
 
-        # for golden_ratio_area in golden_ratio_area_list:
-        #     cv2.rectangle(image, (golden_ratio_area[0], golden_ratio_area[1]), (golden_ratio_area[2], golden_ratio_area[3]), (255, 0, 0))
+        # 중앙에 있는 경우
+        if middle_diff <= error:
+            obj_component.guide_list.append(
+                ObjectGuide(obj_component.id, 4, 0, middle_side - obj.center_point[0]))
 
-        if left_diff < right_diff:
-            if left_diff < middle_diff:
-                # 왼쪽에 치우친 경우
-                if left_diff > error:
-                    self.guide_list[5].append(ObjectGuide(obj_component.id, 5, 0, left_side - obj.center_point[0]))
-            else:
-                # 중앙에 있는 경우
-                if middle_diff > error:
-                    self.guide_list[4].append(ObjectGuide(obj_component.id, 4, 0, middle_side - obj.center_point[0]))
-        else:
-            if right_diff < middle_diff:
-                # 오른쪽에 치우친 경우
-                if right_diff > error:
-                    self.guide_list[5].append(ObjectGuide(obj_component.id, 5, 0, right_side - obj.center_point[0]))
-            else:
-                # 중앙에 있는 경우
-                if middle_diff > error:
-                    self.guide_list[4].append(ObjectGuide(obj_component.id, 4, 0, middle_side - obj.center_point[0]))
+
+def get_iou(golden_area, mask):
+    width = golden_area[3] - golden_area[1]
+    height = golden_area[2] - golden_area[0]
+    count = 0
+    for y in range(golden_area[0], golden_area[2]):
+        for x in range(golden_area[1], golden_area[3]):
+            if mask[y][x] > 0:
+                count += 1
+    return count / float((width * height))
