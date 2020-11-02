@@ -54,7 +54,7 @@ class PoseGuider:
                         self.human.pose[Human.BODY_PARTS[Human.Part.RKnee]][2] > HumanPose.POSE_THRESHOLD:
                     human_height = self.human.roi[2] - self.human.roi[0]
                     diff = -human_height * 10 / 170
-                    guide_message_list.append(ObjectGuide(self.human_component.id, 2, diff, 0))
+                    guide_message_list.append(ObjectGuide(2, diff, 0))
 
                 # 상반신 사진인 경우
                 if self.has_head():
@@ -63,6 +63,6 @@ class PoseGuider:
                         human_height = self.human.roi[2] - self.human.roi[0]
                         diff = -human_height * 20 / 170
                         guide_message_list.append(
-                            ObjectGuide(self.human_component.id, 8, diff, 0))
+                            ObjectGuide(8, diff, 0))
 
         return guide_message_list
