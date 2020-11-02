@@ -208,12 +208,12 @@ class Guider:
         for index, golden_area in enumerate(self.get_golden_ratio_area()):
             iou = get_iou(golden_area, obj_component.object.mask)
             if iou > 0.7:
-                obj_component.guide_list.append(ObjectGuide(obj_component.id, 5, index, 0))
+                obj_component.guide_list.append(ObjectGuide(5, index, 0))
 
         # 중앙에 있는 경우
         if middle_diff <= error:
             obj_component.guide_list.append(
-                ObjectGuide(obj_component.id, 4, 0, middle_side - obj.center_point[0]))
+                ObjectGuide(4, 0, middle_side - obj.center_point[0]))
 
 
 def get_iou(golden_area, mask):
