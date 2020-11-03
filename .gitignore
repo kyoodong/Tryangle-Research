@@ -479,3 +479,5 @@ process/cluster_data.csv
 human_pose/models
 
 .idea/GomsonModel.iml
+data.csv
+resnet_101_score_training
