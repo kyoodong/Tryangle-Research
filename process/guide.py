@@ -1,6 +1,5 @@
 class Guide:
-    def __init__(self, object_id, guide_id):
-        self.object_id = object_id
+    def __init__(self, guide_id):
         self.guide_id = guide_id
 
     def __str__(self):
@@ -11,8 +10,8 @@ class Guide:
 
 
 class LineGuide(Guide):
-    def __init__(self, object_id, guide_id):
-        super(LineGuide, self).__init__(object_id, guide_id)
+    def __init__(self, guide_id):
+        super(LineGuide, self).__init__(guide_id)
 
     def __str__(self):
         return "{{'LineGuide':{}}}".format(str(self.__dict__))
@@ -22,8 +21,8 @@ class LineGuide(Guide):
 
 
 class ObjectGuide(Guide):
-    def __init__(self, object_id, guide_id, diff_x, diff_y):
-        super(ObjectGuide, self).__init__(object_id, guide_id)
+    def __init__(self, guide_id, diff_x, diff_y):
+        super(ObjectGuide, self).__init__(guide_id)
         self.diff_x = diff_x
         self.diff_y = diff_y
 
