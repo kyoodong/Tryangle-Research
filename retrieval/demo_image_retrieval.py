@@ -1,7 +1,8 @@
 import time
-import psutil
+# import psutil
 import os
 
+import cv2
 import tensorflow as tf
 import tensorflow.keras.layers as layers
 from tensorflow.keras.models import Model
@@ -57,9 +58,9 @@ def retrieval_res(image_path, binary_file, name_file, index_type, k):
 
     # 메모리 사용량 측정
     pid = os.getpid()
-    current_process = psutil.Process(pid)
-    current_process_memory_usage_as_KB = current_process.memory_info()[0] / 2. ** 20
-    print(f"BEFORE CODE: Current memory KB   : {current_process_memory_usage_as_KB: 9.3f} KB")
+    # current_process = psutil.Process(pid)
+    # current_process_memory_usage_as_KB = current_process.memory_info()[0] / 2. ** 20
+    # print(f"BEFORE CODE: Current memory KB   : {current_process_memory_usage_as_KB: 9.3f} KB")
 
 
 if __name__ == "__main__":
