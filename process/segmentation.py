@@ -24,7 +24,7 @@ color_cache = defaultdict(lambda: {})
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 
 sys.path.append(ROOT_DIR)  # To find local version of the library
-TRAINED_MODEL = os.path.join(ROOT_DIR, 'ptyolact/weights/yolact_base_54_800000.pth')
+TRAINED_MODEL = os.path.join(ROOT_DIR, 'ptyolact/weights/yolact_custom_89_1280000.pth')
 
 cuda = False
 # ----YOLACT 기본 설정----------------------------------
