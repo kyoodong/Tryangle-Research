@@ -260,6 +260,15 @@ class YOLACT():
             # YOLACT 실행
             det_outs = net(batch)
 
+            if det_outs[0]['detection'] is None:
+                return {
+                    "rois": np.array([]),
+                    "class_ids": np.array([]),
+                    "scores": np.array([]),
+                    "masks": np.array([]),
+                    "fpn_feature": np.array([])
+                }
+
             # 이미지 검색을 위한 feature 처리
             det_fpn_feature = det_outs[0]['detection']['fpn_feature']
             global_avg_pool_out = F.adaptive_avg_pool2d(det_fpn_feature, (1, 1))
