@@ -380,29 +380,14 @@ struct Index {
 
 
 std::vector<std::string> image_retrieval(
-	cv::Mat img,
-	torch::jit::script::Module model);
+	cv::Mat img);
 at::Tensor to_tensor(cv::Mat src);
 
 int main()
 {
-	torch::jit::script::Module model;
-
-	try {
-		// torch::jit::load()을 사용해 ScriptModule을 파일로부터 역직렬화
-		model = torch::jit::load("resnet50_model.pt");
-		model.eval();
-	}
-	catch (const c10::Error& e) {
-		std::cerr << e.msg() << "\n";
-		std::cerr << "error loading the model\n";
-		return -1;
-	}
-	std::cout << "ok\n";
-
 	cv::Mat img;
 	img = cv::imread("test1.jpg");
-	std::vector<std::string> image_names = image_retrieval(img, model);
+	std::vector<std::string> image_names = image_retrieval(img);
 
 	for (int i = 0; i < image_names.size(); i++) {
 		std::cout << image_names[i] << "\n";
@@ -412,8 +397,19 @@ int main()
 }
 
 std::vector<std::string> image_retrieval(
-	cv::Mat img,
-	torch::jit::script::Module model) {
+	cv::Mat img) {
+
+	torch::jit::script::Module model;
+	try {
+		// torch::jit::load()을 사용해 ScriptModule을 파일로부터 역직렬화
+		model = torch::jit::load("resnet50_model.pt");
+		model.eval();
+	}
+	catch (const c10::Error& e) {
+		std::cerr << e.msg() << "\n";
+		std::cerr << "error loading the model\n";
+		return std::vector<std::string>();
+	}
 
 	int k = 4;
 	std::vector<std::string> image_names;
