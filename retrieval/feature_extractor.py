@@ -2,24 +2,52 @@ import struct
 import glob
 import numpy as np
 import os
-import tensorflow_hub as hub
 
-import tensorflow as tf
-import tensorflow.keras.layers as layers
-from tensorflow.keras.models import Model
+import torch.nn as nn
+import torchvision
+import torch
+from torchvision import transforms
+from torch.utils.data import DataLoader
+import cv2
+import PIL.Image as Image
 
 '''
 이미지에서 특징을 뽑아서 binary 형태로 저장
 '''
+class SimpleModel(nn.Module):
 
-# 이미지 전처리 프로세싱
-def preprocess(img_path, input_shape=None):
-    img = tf.io.read_file(img_path)
-    img = tf.image.decode_jpeg(img, channels=input_shape[2])
-    if input_shape is not None:
-        img = tf.image.resize(img, input_shape[:2])
-    img = tf.keras.applications.mobilenet_v2.preprocess_input(img)
-    return img
+    def __init__(self):
+        super(SimpleModel, self).__init__()
+        resnet = torchvision.models.resnet50(pretrained=True)
+
+        self._backbone = _backbone = nn.Sequential(
+            resnet.conv1,
+            resnet.bn1,
+            resnet.relu,
+            resnet.maxpool,
+            resnet.layer1,
+            resnet.layer2,
+            resnet.layer3,
+            resnet.avgpool
+        )
+
+    def forward(self, x):
+        x = self._backbone(x)
+        x = x.flatten(start_dim=1)
+        return x
+
+class TransformCVResize(object):
+
+    def __init__(self, size, interpolation=cv2.INTER_LINEAR):
+        assert isinstance(size, int) or (isinstance(size, tuple) and len(size) == 2)
+        self.size = size
+        self.interpolation = interpolation
+
+    def __call__(self, img):
+        img = np.array(img)
+        img = cv2.resize(img, dsize=(224, 224), interpolation=cv2.INTER_LINEAR)
+        img = Image.fromarray(np.uint8(img))
+        return img
 
 def extract(image_dataset, store_dir="features", store_file="fvecs"):
     if not os.path.exists(store_dir):
@@ -28,30 +56,32 @@ def extract(image_dataset, store_dir="features", store_file="fvecs"):
     name_file = f"{store_dir}/{store_file}_names.txt"
 
     batch_size = 100
-    input_shape = (224, 224, 3)
-    base = tf.keras.applications.MobileNetV2(input_shape=input_shape,
-                                             include_top=False,
-                                             weights='imagenet')
-    base.trainable = False
-    model = Model(inputs=base.input, outputs=layers.GlobalAveragePooling2D()(base.output))
+    preprocess = transforms.Compose([
+        TransformCVResize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
 
-    fnames = glob.glob(image_dataset, recursive=True)
-    list_ds = tf.data.Dataset.from_tensor_slices(fnames)
-    ds = list_ds.map(lambda x: preprocess(x, input_shape), num_parallel_calls=-1)
-    dataset = ds.batch(batch_size).prefetch(-1)
+    model = SimpleModel()
+    model.eval()
 
-    with open(binary_file, 'wb') as f:
-        for i, batch in enumerate(dataset):
-            fvecs = model.predict(batch)
+    fnames = glob.glob(os.path.join(image_dataset, "**", "*.jpg"), recursive=True)
+    dataset = torchvision.datasets.ImageFolder(root=image_dataset, transform=preprocess)
+    dataloaders = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=4)
 
-            # fvecs의 길이 만큼 fmt설정
-            fmt = f'{np.prod(fvecs.shape)}f'
+    with torch.no_grad():
+        with open(binary_file, 'wb') as f:
+            for i, (image, labels) in enumerate(dataloaders):
+                fvecs = model(image)
+                fvecs = fvecs.numpy()
+                # fvecs의 길이 만큼 fmt설정
+                fmt = f'{np.prod(fvecs.shape)}f'
 
-            # fmt = 포맷, fvecs.flatten() = 벡터를 한줄로 변환
-            # struct.pack을 사용하여 패킹한다.
-            f.write(struct.pack(fmt, *(fvecs.flatten())))
+                # fmt = 포맷, fvecs.flatten() = 벡터를 한줄로 변환
+                # struct.pack을 사용하여 패킹한다.
+                f.write(struct.pack(fmt, *(fvecs.flatten())))
 
-            print(f"[INFO] Process {i * batch_size}/{len(fnames)} images.....")
+                print(f"[INFO] Process {i * batch_size}/{len(fnames)} images.....")
 
     with open(name_file, 'w') as f:
         f.write('\n'.join(fnames))
