@@ -9,13 +9,14 @@ import os
 tf.executing_eagerly = False
 
 N_CLUSTER = 15
+
 MAX_SCORE = 5
 
 image_input = Input(shape=(None, None, 3), name="image")
 cluster_input = Input(shape=(1, ), name="cluster")
 
-# preprocess_input = tf.keras.applications.mobilenet_v2.preprocess_input(image_input)
-base_model = tf.keras.applications.MobileNetV2(include_top=False, input_tensor=image_input)
+base_model = tf.keras.applications.ResNet101(include_top=False, input_tensor=image_input)
+# base_model = tf.keras.applications.EfficientNetB7(include_top=False, input_tensor=image_input)
 x = base_model.output
 x = GlobalAveragePooling2D()(x)
 x = Dense(1024, activation='relu')(x)
@@ -44,15 +45,13 @@ unit_size = data.shape[0] // 10
 # 80%
 train_size = unit_size * 8
 
-# 10%
-test_size = unit_size
+# 20%
+val_size = unit_size * 2
 
 full_dataset = tf.data.Dataset.from_tensor_slices((urls, clusters, labels))
 full_dataset = full_dataset.shuffle(20000)
 train_dataset = full_dataset.take(train_size)
-test_dataset = full_dataset.skip(train_size)
-val_dataset = test_dataset.skip(test_size)
-test_dataset = test_dataset.take(test_size)
+val_dataset = train_dataset.skip(val_size)
 
 
 normalization_layer = tf.keras.layers.experimental.preprocessing.Rescaling(1./255)
@@ -70,12 +69,14 @@ def preprocess_data(url, cluster, label):
     return {"image": image, "cluster": cluster}, label
 
 
-BATCH_SIZE = 32
+BATCH_SIZE = 4
+
+
 train_label_ds = train_dataset.map(preprocess_data, num_parallel_calls=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
-test_label_ds = test_dataset.map(preprocess_data, num_parallel_calls=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
 val_label_ds = val_dataset.map(preprocess_data, num_parallel_calls=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
 
-checkpoint_path = "score_training/cp.ckpt"
+checkpoint_path = "resnet_101_score_training/cp.ckpt"
+# checkpoint_path = "efficient_net_score_training/cp.ckpt"
 checkpoint_dir = os.path.dirname(checkpoint_path)
 
 if os.path.exists(checkpoint_dir):
@@ -86,13 +87,25 @@ if os.path.exists(checkpoint_dir):
 cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                  save_weights_only=True,
                                                  verbose=1)
-HOUR = 6
 
 model.fit(train_label_ds, batch_size=BATCH_SIZE,
           validation_data=val_label_ds,
           validation_freq=5,
-          epochs=HOUR * 8, callbacks=[cp_callback])
+          epochs=200, callbacks=[cp_callback])
 
-predictions = model.predict(test_label_ds)
-for prediction in predictions:
-    print(prediction, np.argmax(prediction))
+
+optimizer = tf.keras.optimizers.Adam(learning_rate=1e-5)
+model.compile(optimizer=optimizer, loss="sparse_categorical_crossentropy",
+              metrics=["sparse_categorical_crossentropy", "acc"])
+
+model.fit(train_label_ds, batch_size=BATCH_SIZE,
+          validation_data=val_label_ds,
+          validation_freq=5,
+          epochs=100
+          , callbacks=[cp_callback])
+
+# predictions = model.predict(test_label_ds)
+# for prediction in predictions:
+#     print(prediction, np.argmax(prediction))
+
+
