@@ -6,7 +6,7 @@ matplotlib
 scikit-image
 tensorflow>=2.0.0
 opencv-python
-h5py
+h5py==2.10.0
 imgaug
 IPython[all]
 torch
