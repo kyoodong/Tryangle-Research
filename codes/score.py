@@ -53,6 +53,21 @@ full_dataset = full_dataset.shuffle(20000)
 train_dataset = full_dataset.take(train_size)
 val_dataset = train_dataset.skip(val_size)
 
+test_data = pd.read_csv("test_data.csv", header=None, names=["url", "cluster", "score"])
+clusters = np.array(test_data.pop("cluster"), np.float32)
+labels = np.array(test_data.pop("score"), np.float32)
+urls = np.array(test_data).reshape([-1])
+
+unit_size = test_data.shape[0] // 10
+
+# 80%
+train_size = unit_size * 8
+
+# 20%
+val_size = unit_size * 2
+
+test_dataset = tf.data.Dataset.from_tensor_slices((urls, clusters, labels))
+
 
 normalization_layer = tf.keras.layers.experimental.preprocessing.Rescaling(1./255)
 
@@ -74,6 +89,7 @@ BATCH_SIZE = 4
 
 train_label_ds = train_dataset.map(preprocess_data, num_parallel_calls=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
 val_label_ds = val_dataset.map(preprocess_data, num_parallel_calls=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
+test_label_ds = test_dataset.map(preprocess_data, num_parallel_calls=tf.data.experimental.AUTOTUNE).batch(BATCH_SIZE)
 
 checkpoint_path = "resnet_101_score_training/cp.ckpt"
 # checkpoint_path = "efficient_net_score_training/cp.ckpt"
@@ -83,6 +99,7 @@ if os.path.exists(checkpoint_dir):
     model.load_weights(checkpoint_path)
     print('load')
 
+"""
 # 모델의 가중치를 저장하는 콜백 만들기
 cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                  save_weights_only=True,
@@ -103,9 +120,17 @@ model.fit(train_label_ds, batch_size=BATCH_SIZE,
           validation_freq=5,
           epochs=100
           , callbacks=[cp_callback])
+"""
 
-# predictions = model.predict(test_label_ds)
-# for prediction in predictions:
-#     print(prediction, np.argmax(prediction))
 
+"""
+# 예측
+predictions = model.predict(test_label_ds)
+for prediction in predictions:
+    print(prediction, np.argmax(prediction))
+"""
+
+# 모델 평가
+ev = model.evaluate(test_label_ds, batch_size=BATCH_SIZE)
+print(ev)
 
