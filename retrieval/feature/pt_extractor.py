@@ -94,7 +94,7 @@ if __name__ == '__main__':
     parser.add_argument("--dataset", required=True,
                         help='Dataset path format, ex) ./image/**/*.jpg')
     parser.add_argument("--directory", required=False,
-                        default="features",
+                        default="output",
                         help='Features and Image Path store File')
     parser.add_argument("--store", required=False,
                         default="fvecs",
