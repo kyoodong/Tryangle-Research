@@ -1,5 +1,5 @@
 import time
-import psutil
+# import psutil
 import os
 
 import tensorflow as tf
@@ -7,11 +7,19 @@ import tensorflow.keras.layers as layers
 from tensorflow.keras.models import Model
 
 
-from retrieval.feature_extractor import preprocess
-from retrieval.image_retrieval import ImageRetrieval
+from .image_retrieval import ImageRetrieval
+
+# 이미지 전처리 프로세싱
+def preprocess(img_path, input_shape=None):
+    img = tf.io.read_file(img_path)
+    img = tf.image.decode_jpeg(img, channels=input_shape[2])
+    if input_shape is not None:
+        img = tf.image.resize(img, input_shape[:2])
+    img = tf.keras.applications.mobilenet_v2.preprocess_input(img)
+    return img
 
 
-def retrieval_res(image_path, binary_file, name_file, index_type, k):
+def retrieval(image_path, binary_file, name_file, index_type, k):
     # query Image feature 뽑는 과정
     # 현재는 간단하게 Resnet152로 이미지의 feature를 뽑아내서 비교
     dim = 1280
@@ -57,9 +65,9 @@ def retrieval_res(image_path, binary_file, name_file, index_type, k):
 
     # 메모리 사용량 측정
     pid = os.getpid()
-    current_process = psutil.Process(pid)
-    current_process_memory_usage_as_KB = current_process.memory_info()[0] / 2. ** 20
-    print(f"BEFORE CODE: Current memory KB   : {current_process_memory_usage_as_KB: 9.3f} KB")
+    # current_process = psutil.Process(pid)
+    # current_process_memory_usage_as_KB = current_process.memory_info()[0] / 2. ** 20
+    # print(f"BEFORE CODE: Current memory KB   : {current_process_memory_usage_as_KB: 9.3f} KB")
 
 
 if __name__ == "__main__":
@@ -80,5 +88,5 @@ if __name__ == "__main__":
                         help='k')
     args = parser.parse_args()
 
-    retrieval_res(args.image, args.features, args.names, args.index, int(args.k))
+    retrieval(args.image, args.features, args.names, args.index, int(args.k))
 
