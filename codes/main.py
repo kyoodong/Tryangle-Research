@@ -1,7 +1,10 @@
 import os
 import sys
+
 import skimage.io
-from process.guider import Guider
+
+from process.component import ObjectComponent
+from process.guider.guider import Guider
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
@@ -18,3 +21,6 @@ while True:
     # r = api.segment(image)
     guider = Guider(image, False)
     print(str(guider))
+    for c in guider.component_list:
+        if isinstance(c, ObjectComponent):
+            print(c.object.clazz)

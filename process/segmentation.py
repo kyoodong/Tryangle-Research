@@ -24,7 +24,7 @@ color_cache = defaultdict(lambda: {})
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
 
 sys.path.append(ROOT_DIR)  # To find local version of the library
-TRAINED_MODEL = os.path.join(ROOT_DIR, 'ptyolact/weights/yolact_base_54_800000.pth')
+TRAINED_MODEL = os.path.join(ROOT_DIR, 'ptyolact/weights/yolact_custom_89_1280000.pth')
 
 cuda = False
 # ----YOLACT 기본 설정----------------------------------
@@ -259,6 +259,15 @@ class YOLACT():
 
             # YOLACT 실행
             det_outs = net(batch)
+
+            if det_outs[0]['detection'] is None:
+                return {
+                    "rois": np.array([]),
+                    "class_ids": np.array([]),
+                    "scores": np.array([]),
+                    "masks": np.array([]),
+                    "fpn_feature": np.array([])
+                }
 
             # 이미지 검색을 위한 feature 처리
             det_fpn_feature = det_outs[0]['detection']['fpn_feature']

@@ -5,6 +5,36 @@ import numpy as np
 from sklearn.preprocessing import normalize
 import faiss
 
+from retrieval.feature.tf_extractor import (
+    preprocess,
+    MODEL as fmodel,
+    DIMENTION
+)
+
+def certain_retrieval(query_image,
+                      image_names,
+                      feature_dir="feature/output"):
+    query_image = preprocess(query_image)
+    query_fvec = fmodel.predict(query_image)
+
+    fvecs = []
+    for image_name in image_names:
+        fvec_file = os.path.join(feature_dir, f"{image_name}.feature")
+        fvec = np.memmap(fvec_file, dtype='float32', mode='r').view('float32').reshape(DIMENTION)
+        fvecs.append(fvec)
+    fvecs = np.array(fvecs)
+
+    index = faiss.IndexFlatL2(DIMENTION)
+    index.add(normalize(fvecs))
+    dsts, idxs = index.search(normalize(query_fvec), len(image_names))
+
+    return_names = []
+    for idx in idxs[0]:
+        return_names.append(image_names[idx])
+
+    return return_names
+
+
 
 class ImageRetrieval:
     def __init__(self,
@@ -102,3 +132,16 @@ class ImageRetrieval:
         index.train(normalize(fvecs))
         assert index.is_trained
         return index
+
+
+
+if __name__ == "__main__":
+    from PIL import Image
+    image_dir = "../images"
+    image_names = [f"test{i}.jpg"for i in range(1, 27)]
+    query_img_path = os.path.join(image_dir, "asd.jpg")
+
+    query_img = Image.open(query_img_path)
+    query_img = np.array(query_img)
+
+    certain_retrieval(query_img, image_names)
