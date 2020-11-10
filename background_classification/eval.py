@@ -16,6 +16,7 @@ import background_classification.data.config as config
 '''
 모델 사용방법
 from background_classification.model.model import BGClassification
+from background_classification.data.data import FastBaseTransform
 
 # 모델 생성하는 부분
 model = BGClassification()
