@@ -1,14 +1,19 @@
-
 import torch
+import os
+import sys
 
 from background_classification.model.model import BGClassification
 from background_classification.data.data import FastBaseTransform
 
-CUDA = True
+# Root directory of the project
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+sys.path.append(ROOT_DIR)  # To find local version of the library
+
+CUDA = False
 
 # 모델 생성하는 부분
 MODEL = BGClassification()
-MODEL.load_weights("weights/model_base_44_8100.pth")
+MODEL.load_weights("{}/weights/model_base_44_8100.pth".format(ROOT_DIR), CUDA)
 MODEL.eval()
 
 if CUDA:
@@ -20,7 +25,7 @@ def get_bg(img):
     frame = torch.from_numpy(img).float()
     if CUDA:
         frame = frame.cuda()
-    batch = FastBaseTransform()(frame.unsqueeze(0))
+    batch = FastBaseTransform(CUDA)(frame.unsqueeze(0))
 
     # 실제로 모델 테스트
     with torch.no_grad():
