@@ -19,20 +19,22 @@ skyfinder, ade20k 데이터 셋을 coco 데이터 셋으로 변환하기 위한 
 
 coco_annotations 은 기존의 coco annotation으로 skyfinder 혹은 ade20k 데이터셋이 이 기존 어노테이션과 합쳐진 어노테이션이 결과로 생겨남  
 
-## InstagramCrawling
-인스타그램 이미지를 크롤링하기 위한 프로젝트.
-크롤링하고자 하는 해시태그를 배열로서 적어두면 크롬 브라우저를 통해 스크롤하며 자동으로 이미지를 크롤링함
+## background_classification
+배경을 인식하여 분류하는 문제를 해결하기 위함  
+추천 이미지를 제공할 때 배경이 비슷한 사진을 우선적으로 제공하는 기능에 사용됨  
 
-## MaskRCNN
-MaskRCNN을 직접구 현하고자 만든 프로젝트 (현재는 시간 상 구현 불가로 판단)  
-  
+## human_pose
+사람 관절의 위치를 파악하여 가이드를 제공하기 위함  
+
+## ptyolact
+빠른 이미지 세그멘테이션을 위해 Mask RCNN을 대신하여 차용된 알고리즘
+
+## retrieval
+장소 기반 가이드 이미지를 제공할 때 비슷하게 생긴 이미지를 우선적으로 제공하기 위함  
+
+## retrieval_mobile
+모바일에서 빠른 구동을 위해 캐시 이미지 내에서 검색하는 모듈  
+
 ## Opencv
 Opencv 모듈을 테스트하고자 만든 프로젝트  
 
-## aktwelve_mask_rcnn
-https://github.com/akTwelve/Mask_RCNN
-해당 공개 소스를 인용하여 작업중인 프로젝트  
-현재 TriAngle 의 핵심 소스가 구현된 프로젝트이다.  
-
-main.py : 이미지를 선택하면 해당 이미지에 대한 가이드를 제공하는 파일  
-coco.py : MaskRCNN을 Finetuning 하는 파일. 현재 하늘, 땅, 바다를 추가 학습 중임  
