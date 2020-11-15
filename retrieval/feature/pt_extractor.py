@@ -18,18 +18,21 @@ class SimpleModel(nn.Module):
 
     def __init__(self):
         super(SimpleModel, self).__init__()
-        resnet = torchvision.models.resnet50(pretrained=True)
-
-        self._backbone = _backbone = nn.Sequential(
-            resnet.conv1,
-            resnet.bn1,
-            resnet.relu,
-            resnet.maxpool,
-            resnet.layer1,
-            resnet.layer2,
-            resnet.layer3,
-            resnet.avgpool
-        )
+        # resnet = torchvision.models.resnet50(pretrained=True)
+        #
+        # self._backbone = _backbone = nn.Sequential(
+        #     resnet.conv1,
+        #     resnet.bn1,
+        #     resnet.relu,
+        #     resnet.maxpool,
+        #     resnet.layer1,
+        #     resnet.layer2,
+        #     resnet.layer3,
+        #     resnet.avgpool
+        # )
+        backbone = torchvision.models.mobilenet_v2(pretrained=True).features
+        backbone.out_channel = 1280
+        self._backbone = _backbone = backbone
 
     def forward(self, x):
         x = self._backbone(x)
