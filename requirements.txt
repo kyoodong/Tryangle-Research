@@ -24,3 +24,4 @@ json-tricks
 tensorboardX
 cffi
 tensorflow-hub
+sklearn
