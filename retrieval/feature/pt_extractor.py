@@ -94,6 +94,7 @@ def extract(image_dataset, store_dir="features", store_file="fvecs"):
                 # struct.pack을 사용하여 패킹한다.
                 f.write(struct.pack(fmt, *(fvecs.flatten())))
 
+                processed += batch_size
                 print(f"[INFO] Process {processed}/{size} images.....")
 
     with open(name_file, 'w') as f:
