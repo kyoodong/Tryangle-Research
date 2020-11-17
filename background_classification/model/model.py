@@ -23,10 +23,12 @@ class BGClassification(nn.Module):
         """ Saves the model's weights using compression because the file sizes were getting too big. """
         torch.save(self.state_dict(), path)
 
-    def load_weights(self, path):
+    def load_weights(self, path, CUDA=True):
         """ Loads weights from a compressed save file. """
-        state_dict = torch.load(path)
-
+        if CUDA:
+            state_dict = torch.load(path)
+        else:
+            state_dict = torch.load(path, map_location=torch.device('cpu'))
         self.load_state_dict(state_dict)
 
     def forward(self, x):

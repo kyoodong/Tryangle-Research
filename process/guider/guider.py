@@ -11,7 +11,7 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 
-DEBUG = True
+DEBUG = False
 
 cv_estimator = CVPoseEstimator()
 pose_classifier = CvClassifier()
