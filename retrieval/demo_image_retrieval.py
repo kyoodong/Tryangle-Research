@@ -1,50 +1,34 @@
 import time
-# import psutil
-import os
-
 import tensorflow as tf
-import tensorflow.keras.layers as layers
-from tensorflow.keras.models import Model
 
-
-from .image_retrieval import ImageRetrieval
-
-# 이미지 전처리 프로세싱
-def preprocess(img_path, input_shape=None):
-    img = tf.io.read_file(img_path)
-    img = tf.image.decode_jpeg(img, channels=input_shape[2])
-    if input_shape is not None:
-        img = tf.image.resize(img, input_shape[:2])
-    img = tf.keras.applications.mobilenet_v2.preprocess_input(img)
-    return img
-
+from retrieval.image_retrieval import ImageRetrieval
+from retrieval.feature.tf_extractor import (
+    preprocess,
+    MODEL,
+    DIMENTION,
+    INPUT_SIZE
+)
 
 def retrieval(image_path, binary_file, name_file, index_type, k):
     # query Image feature 뽑는 과정
     # 현재는 간단하게 Resnet152로 이미지의 feature를 뽑아내서 비교
-    dim = 1280
-    input_shape = (224, 224, 3)
-    base = tf.keras.applications.MobileNetV2(input_shape=input_shape,
-                                             include_top=False,
-                                             weights='imagenet')
-    base.trainable = False
-    model = Model(inputs=base.input, outputs=layers.GlobalAveragePooling2D()(base.output))
 
     # 이미지 로드
     st = time.time()
-    img = preprocess(image_path, input_shape)
-    img = tf.reshape(img, (1,) + input_shape)
+
+    img = preprocess(image_path)
+    img = tf.reshape(img, (1,) + INPUT_SIZE)
     print(f"[INFO] image load time {time.time() - st}")
 
     # 이미지에서 feature 뽑아내기
     st = time.time()
-    fvec = model.predict(img)
+    fvec = MODEL.predict(img)
     print(f"[INFO] feature extract time {time.time() - st}")
 
     # 이미지 검색 클래스 생성
     imageRetrieval = ImageRetrieval(fvec_file=binary_file,
                                     fvec_img_file_name=name_file,
-                                    fvec_dim=dim,
+                                    fvec_dim=DIMENTION,
                                     index_type=index_type)
 
     st = time.time()
@@ -64,7 +48,7 @@ def retrieval(image_path, binary_file, name_file, index_type, k):
             f.writelines(f"{path}\n")
 
     # 메모리 사용량 측정
-    pid = os.getpid()
+    # pid = os.getpid()
     # current_process = psutil.Process(pid)
     # current_process_memory_usage_as_KB = current_process.memory_info()[0] / 2. ** 20
     # print(f"BEFORE CODE: Current memory KB   : {current_process_memory_usage_as_KB: 9.3f} KB")
@@ -76,17 +60,22 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--image", required=True,
                         help="Query Image")
-    parser.add_argument("--features", required=True,
-                        help='Features Binary File, .bin')
-    parser.add_argument("--names", required=True,
-                        help='Features image name File, .txt')
+    parser.add_argument("--store_dir", required=False,
+                        default="feature/output",
+                        help='Features and Image Path store directory')
+    parser.add_argument("--store", required=False,
+                        default="fvecs",
+                        help='Features and Image Path store File')
     parser.add_argument("--index", required=False,
-                        default='hnsw',
+                        default='l2',
                         help='Faiss Index type, hnsw or l2 or IVFFlat or IVFPQ')
     parser.add_argument("--k", required=False,
                         default=10,
                         help='k')
     args = parser.parse_args()
 
-    retrieval(args.image, args.features, args.names, args.index, int(args.k))
+    binary_file = f"{args.store_dir}/{args.store}.bin"
+    name_file = f"{args.store_dir}/{args.store}_names.txt"
+
+    retrieval(args.image, binary_file, name_file, args.index, int(args.k))
 
