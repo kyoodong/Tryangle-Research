@@ -35,7 +35,154 @@ class Guider:
         "머리 위에 여백이 있는것이 좋습니다",
     ]
 
-    def __init__(self, image, only_segmentation = True):
+    def guide(self, image, only_segmentation):
+        pass
+
+    def is_single_person(self):
+        pass
+
+    def get_single_person(self):
+        pass
+
+    def get_object_component(self):
+        pass
+
+    def get_golden_ratio_area(self):
+        pass
+
+    def get_obj_position_guides(self, obj_component):
+        pass
+
+
+def get_iou(golden_area, mask):
+    width = golden_area[3] - golden_area[1]
+    height = golden_area[2] - golden_area[0]
+    count = 0
+    for y in range(golden_area[0], golden_area[2]):
+        for x in range(golden_area[1], golden_area[3]):
+            if mask[y][x] > 0:
+                count += 1
+    return count / float((width * height))
+
+
+class SimpleGuider(Guider):
+    def guide(self, image, only_segmentation):
+        self.image = image
+        self.component_list = list()
+        self.cluster = -1
+
+        if DEBUG:
+            plt.imshow(image)
+            plt.show()
+
+        now = get_time()
+        self.r = api.segment(image)
+        diff_time = get_time() - now
+        print('segmentation time : ', diff_time)
+
+        if not only_segmentation and self.r["rois"].shape[0] > 0:
+            now = get_time()
+            self.get_object_component()
+            diff_time = get_time() - now
+            print('get_object_component time : ', diff_time)
+
+    def is_single_person(self):
+        count = 0
+        for component in self.component_list:
+            if isinstance(component, ObjectComponent):
+                if component.object.clazz == 0:
+                    count += 1
+
+        return count == 1
+
+    def get_single_person(self):
+        for component in self.component_list:
+            if isinstance(component, ObjectComponent):
+                if component.object.clazz == 0:
+                    return component
+
+    def get_object_component(self):
+        # 객체마다 외곽선만 따도록 수정
+        # [image_height][image_width][num_of_obj]
+        # 위와 같은 shape 로 이미지가 처리되며 num_of_obj 개수로 나뉜 이미지들을 하나의 이미지로 합쳐야함
+
+        for index, roi in enumerate(self.r['rois']):
+            roi_width = roi[2] - roi[0]
+            roi_height = roi[3] - roi[1]
+            center_point = (roi[0] + roi_width // 2, roi[1] + roi_height // 2)
+
+            ran1 = np.random.normal(0, 1.0, 100)
+            normalized_ran1 = ran1 + abs(min(ran1))
+            max_value = max(normalized_ran1)
+            normalized_ran1 /= max_value
+
+            ran2 = np.random.normal(0, 1.0, 100)
+            normalized_ran2 = ran2 + abs(min(ran2))
+            max_value = max(normalized_ran2)
+            normalized_ran2 /= max_value
+
+            x_rand = [x * (roi_width // 2) for x in normalized_ran1]
+            y_rand = [y * (roi_height // 2) for y in normalized_ran2]
+
+            total_count = len(x_rand) * len(y_rand)
+            count = 0
+
+            # roi 내 특정 몇 부분만 검사하여 부분적으로 area 를 추정
+            for y in y_rand:
+                for x in x_rand:
+                    if self.r['masks'][index][roi[1] + int(y)][roi[0] + int(x)] > 0:
+                        count += 1
+            area = int((roi_width * roi_height) * (count / total_count))
+
+            area_threshold = 0.01
+            height, width = self.image.shape[0], self.image.shape[1]
+            if width * height * area_threshold > area:
+                continue
+
+            # roi 를 살짝 넓직하게 잡아야 사람 포즈 인식이 잘됨
+            roi = self.r['rois'][index]
+            obj = Object(roi, self.r['masks'][index, :, :], self.r['class_ids'][index], self.r['scores'][index],
+                         center_point, area)
+            obj_component = ObjectComponent(len(self.component_list), obj)
+            # 컴포넌트 리스트에 객체 추가
+            self.component_list.append(obj_component)
+
+    def get_golden_ratio_area(self):
+        unit_x = self.image.shape[1] // 8
+        unit_y = self.image.shape[0] // 8
+
+        area_list = list()
+
+        # 좌상단
+        area_list.append((unit_y * 2, unit_x * 2, unit_y * 3, unit_x * 3))
+
+        # 우상단
+        area_list.append((unit_y * 2, unit_x * 5, unit_y * 3, unit_x * 6))
+
+        # 좌하단
+        area_list.append((unit_y * 5, unit_x * 2, unit_y * 6, unit_x * 3))
+
+        # 우하단
+        area_list.append((unit_y * 5, unit_x * 5, unit_y * 6, unit_x * 6))
+
+        # 정중앙
+        area_list.append((unit_y * 3, unit_x * 3, unit_y * 5, unit_x * 5))
+        return area_list
+
+
+def get_iou(golden_area, mask):
+    width = golden_area[3] - golden_area[1]
+    height = golden_area[2] - golden_area[0]
+    count = 0
+    for y in range(golden_area[0], golden_area[2]):
+        for x in range(golden_area[1], golden_area[3]):
+            if mask[y][x] > 0:
+                count += 1
+    return count / float((width * height))
+
+
+class ComplexGuider(Guider):
+    def guide(self, image, only_segmentation = True):
         self.image = image
         self.component_list = list()
         self.cluster = -1
@@ -214,14 +361,3 @@ class Guider:
         if middle_diff <= error:
             obj_component.guide_list.append(
                 ObjectGuide(4, 0, middle_side - obj.center_point[0]))
-
-
-def get_iou(golden_area, mask):
-    width = golden_area[3] - golden_area[1]
-    height = golden_area[2] - golden_area[0]
-    count = 0
-    for y in range(golden_area[0], golden_area[2]):
-        for x in range(golden_area[1], golden_area[3]):
-            if mask[y][x] > 0:
-                count += 1
-    return count / float((width * height))

@@ -4,7 +4,7 @@ import sys
 import skimage.io
 
 from process.component import ObjectComponent
-from process.guider.guider import Guider
+from process.guider.guider import SimpleGuider, ComplexGuider
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
@@ -19,8 +19,9 @@ while True:
     image = skimage.io.imread(os.path.join(IMAGE_DIR, "{}.jpg".format(image_file_name)))
 
     # r = api.segment(image)
-    guider = Guider(image, False)
-    print(str(guider))
-    for c in guider.component_list:
-        if isinstance(c, ObjectComponent):
-            print(c.object.clazz)
+    simple_guider = SimpleGuider()
+    complex_guider = ComplexGuider()
+
+    simple_guider.guide(image, False)
+    complex_guider.guide(image, False)
+
