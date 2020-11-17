@@ -24,3 +24,6 @@ json-tricks
 tensorboardX
 cffi
 tensorflow-hub
+sklearn
+faiss-gpu
+pymysql
