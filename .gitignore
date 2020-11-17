@@ -483,6 +483,7 @@ human_pose/models
 .idea/GomsonModel.iml
 data.csv
 resnet_101_score_training
+mobilenet_score_training
 
 *.csv
 *.feature
@@ -490,4 +491,4 @@ fvecs.bin
 *.index
 fvecs_names.txt
 images
-.idea
+.idea/**
