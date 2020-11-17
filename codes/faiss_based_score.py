@@ -42,8 +42,10 @@ def preprocess(image, input_shape=None):
     return img
 
 
-index_types = ['hnsw', 'l2', 'IVFFlat', 'IVFPQ']
-image_counts = [i for i in range(10, 200, 10)]
+# index_types = ['hnsw', 'l2', 'IVFFlat', 'IVFPQ']
+index_types = ['hnsw']
+# image_counts = [i for i in range(10, 200, 10)]
+image_counts = [5]
 
 input_shape = (224, 224, 3)
 base = tf.keras.applications.MobileNetV2(input_shape=input_shape,
@@ -91,8 +93,17 @@ for index_type in index_types:
             cursor.execute(sql)
             results = cursor.fetchall()
             scores = [int(result[0]) for result in results]
-            avg_score = int(sum(scores) / len(scores) + 0.5)
+            if len(scores) == 0:
+                continue
 
+            total_score = 0
+
+            for i, score in enumerate(scores):
+                weight = len(scores) - i
+                total_score += weight * score
+
+            index_sum = sum([i for i in range(len(scores) + 1)])
+            avg_score = int(float(total_score) / index_sum)
             all_count += 1
             if avg_score == score:
                 correct_count += 1
