@@ -18,18 +18,21 @@ class SimpleModel(nn.Module):
 
     def __init__(self):
         super(SimpleModel, self).__init__()
-        resnet = torchvision.models.resnet50(pretrained=True)
-
-        self._backbone = _backbone = nn.Sequential(
-            resnet.conv1,
-            resnet.bn1,
-            resnet.relu,
-            resnet.maxpool,
-            resnet.layer1,
-            resnet.layer2,
-            resnet.layer3,
-            resnet.avgpool
-        )
+        # resnet = torchvision.models.resnet50(pretrained=True)
+        #
+        # self._backbone = _backbone = nn.Sequential(
+        #     resnet.conv1,
+        #     resnet.bn1,
+        #     resnet.relu,
+        #     resnet.maxpool,
+        #     resnet.layer1,
+        #     resnet.layer2,
+        #     resnet.layer3,
+        #     resnet.avgpool
+        # )
+        backbone = torchvision.models.mobilenet_v2(pretrained=True).features
+        backbone.out_channel = 1280
+        self._backbone = _backbone = backbone
 
     def forward(self, x):
         x = self._backbone(x)
@@ -50,6 +53,14 @@ class TransformCVResize(object):
         return img
 
 def extract(image_dataset, store_dir="features", store_file="fvecs"):
+    """
+    이미지들의 feature를 뽑아냄
+
+    :param image_dataset: feature를 추출할 이미지 디렉토리
+    :param store_dir: 이미지 feature를 저장할 디렉토리
+    :param store_file: 이미지 feature 파일의 이름
+    """
+    
     if not os.path.exists(store_dir):
         os.mkdir(store_dir)
     binary_file = f"{store_dir}/{store_file}.bin"
@@ -69,6 +80,8 @@ def extract(image_dataset, store_dir="features", store_file="fvecs"):
     dataset = torchvision.datasets.ImageFolder(root=image_dataset, transform=preprocess)
     dataloaders = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=4)
 
+    size = len(fnames)
+    processed = 0
     with torch.no_grad():
         with open(binary_file, 'wb') as f:
             for i, (image, labels) in enumerate(dataloaders):
@@ -81,7 +94,8 @@ def extract(image_dataset, store_dir="features", store_file="fvecs"):
                 # struct.pack을 사용하여 패킹한다.
                 f.write(struct.pack(fmt, *(fvecs.flatten())))
 
-                print(f"[INFO] Process {i * batch_size}/{len(fnames)} images.....")
+                processed += batch_size
+                print(f"[INFO] Process {processed}/{size} images.....")
 
     with open(name_file, 'w') as f:
         f.write('\n'.join(fnames))
@@ -92,10 +106,10 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", required=True,
-                        help='Dataset path format, ex) ./image/**/*.jpg')
+                        help='Dataset directory path')
     parser.add_argument("--directory", required=False,
                         default="output",
-                        help='Features and Image Path store File')
+                        help='Features and Image Path store directory')
     parser.add_argument("--store", required=False,
                         default="fvecs",
                         help='Features and Image Path store File')
